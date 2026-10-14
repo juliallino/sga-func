@@ -14,9 +14,9 @@ workload INT NOT NULL);
 
 -- 5. Tipo para situação da matrícula
 CREATE TYPE enrollment_status AS ENUM (
-    'Active',
-    'Suspended',
-    'Completed'
+    'active',
+    'suspended',
+    'completed'
 );
 
 -- 6. Tabela de matrículas
