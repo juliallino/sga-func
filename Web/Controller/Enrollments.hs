@@ -35,9 +35,15 @@ instance Controller EnrollmentsController where
             |> ifValid \case
                 Left enrollment -> render EditView { .. }
                 Right enrollment -> do
-                    enrollment <- enrollment |> updateRecord
-                    setSuccessMessage "Enrollment updated"
-                    redirectTo EditEnrollmentAction { .. }
+                    duplicada <- matriculaDuplicada enrollment
+                    if duplicada
+                        then do
+                            setErrorMessage "Este aluno já está matriculado nesta disciplina."
+                            render EditView { .. }
+                        else do
+                            enrollment <- enrollment |> updateRecord
+                            setSuccessMessage "Enrollment updated"
+                            redirectTo EditEnrollmentAction { .. }
 
     action CreateEnrollmentAction = do
         let enrollment = newRecord @Enrollment
@@ -46,9 +52,15 @@ instance Controller EnrollmentsController where
             |> ifValid \case
                 Left enrollment -> render NewView { .. } 
                 Right enrollment -> do
-                    enrollment <- enrollment |> createRecord
-                    setSuccessMessage "Enrollment created"
-                    redirectTo EnrollmentsAction
+                    duplicada <- matriculaDuplicada enrollment
+                    if duplicada
+                        then do
+                            setErrorMessage "Este aluno já está matriculado nesta disciplina."
+                            render NewView { .. }
+                        else do
+                            enrollment <- enrollment |> createRecord
+                            setSuccessMessage "Enrollment created"
+                            redirectTo EnrollmentsAction
 
     action DeleteEnrollmentAction { enrollmentId } = do
         enrollment <- fetch enrollmentId
@@ -63,3 +75,12 @@ calcularMediaEnrollment :: [Grade] -> Maybe Double
 calcularMediaEnrollment grades =
     GradeDomain.mediaDaMatricula
         (map (\grade -> (realToFrac grade.score, realToFrac grade.weight)) grades)
+
+matriculaDuplicada :: (?modelContext :: ModelContext) => Enrollment -> IO Bool
+matriculaDuplicada enrollment = do
+    matriculas <- query @Enrollment
+        |> filterWhere (#studentId, enrollment.studentId)
+        |> filterWhere (#courseId, enrollment.courseId)
+        |> fetch
+
+    pure (any (\matricula -> matricula.id /= enrollment.id) matriculas)
