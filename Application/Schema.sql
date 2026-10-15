@@ -25,7 +25,7 @@ CREATE TABLE enrollments (
     student_id UUID NOT NULL,
     course_id UUID NOT NULL,
     enrollment_date DATE NOT NULL DEFAULT CURRENT_DATE,
-    status enrollment_status NOT NULL DEFAULT 'Active',
+    status enrollment_status NOT NULL DEFAULT 'active',
 
     CONSTRAINT enrollments_unique_student_course
         UNIQUE (student_id, course_id),
