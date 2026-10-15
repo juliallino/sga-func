@@ -10,4 +10,4 @@ import Web.Types
 import Application.Helper.Controller
 import IHP.ControllerPrelude
 import Generated.Types
-import Web.Routes
+import Web.Routes ()

@@ -10,14 +10,14 @@ import Application.Helper.View
 defaultLayout :: Html -> Html
 defaultLayout inner = [hsx|
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
     <head>
         {metaTags}
 
         {stylesheets}
         {scripts}
 
-        <title>{pageTitleOrDefault "App"}</title>
+        <title>{pageTitleOrDefault "SGA — Sistema de Gestão Acadêmica"}</title>
     </head>
     <body>
         <div class="container mt-4">
@@ -65,7 +65,7 @@ metaTags :: Html
 metaTags = [hsx|
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/>
-    <meta property="og:title" content="App"/>
+    <meta property="og:title" content="SGA — Sistema de Gestão Acadêmica"/>
     <meta property="og:type" content="website"/>
     <meta property="og:url" content="TODO"/>
     <meta property="og:description" content="TODO"/>

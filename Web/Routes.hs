@@ -8,3 +8,47 @@ import Web.Types
 [routes|StaticController
 GET /    WelcomeAction
 |]
+
+[routes|StudentsController
+GET /Students StudentsAction
+GET /NewStudent NewStudentAction
+POST /CreateStudent CreateStudentAction
+GET /ShowStudent?studentId ShowStudentAction
+GET /EditStudent?studentId EditStudentAction
+POST /UpdateStudent?studentId UpdateStudentAction
+DELETE /DeleteStudent?studentId DeleteStudentAction
+|]
+
+
+[routes|CoursesController
+GET /Courses CoursesAction
+GET /NewCourse NewCourseAction
+POST /CreateCourse CreateCourseAction
+GET /ShowCourse?courseId ShowCourseAction
+GET /EditCourse?courseId EditCourseAction
+POST /UpdateCourse?courseId UpdateCourseAction
+DELETE /DeleteCourse?courseId DeleteCourseAction
+|]
+
+
+[routes|EnrollmentsController
+GET /Enrollments EnrollmentsAction
+GET /NewEnrollment NewEnrollmentAction
+POST /CreateEnrollment CreateEnrollmentAction
+GET /ShowEnrollment?enrollmentId ShowEnrollmentAction
+GET /EditEnrollment?enrollmentId EditEnrollmentAction
+POST /UpdateEnrollment?enrollmentId UpdateEnrollmentAction
+DELETE /DeleteEnrollment?enrollmentId DeleteEnrollmentAction
+|]
+
+
+[routes|GradesController
+GET /Grades GradesAction
+GET /NewGrade NewGradeAction
+POST /CreateGrade CreateGradeAction
+GET /ShowGrade?gradeId ShowGradeAction
+GET /EditGrade?gradeId EditGradeAction
+POST /UpdateGrade?gradeId UpdateGradeAction
+DELETE /DeleteGrade?gradeId DeleteGradeAction
+|]
+
