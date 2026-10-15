@@ -4,8 +4,9 @@ import Prelude
 mediaPonderada :: [(Double, Double)] -> Maybe Double
 mediaPonderada [] = Nothing
 mediaPonderada notas
-    | any (\(nota, peso) -> nota < 0 || nota > 10 || peso <= 0) notas = Nothing
+    | any (\(nota, peso) -> not (notaValida nota && pesoValido peso)) notas = Nothing
     | pesoTotal == 0 = Nothing
+    | not (numeroFinito somaPonderada && numeroFinito pesoTotal) = Nothing
     | otherwise = Just (somaPonderada / pesoTotal)
     where
         somaPonderada = sum [nota * peso | (nota, peso) <- notas]
@@ -13,11 +14,15 @@ mediaPonderada notas
 
 -- Verifica se uma nota está entre 0 e 10.
 notaValida :: Double -> Bool
-notaValida nota = nota >= 0 && nota <= 10
+notaValida nota = numeroFinito nota && nota >= 0 && nota <= 10
 
 -- Verifica se um peso é positivo.
 pesoValido :: Double -> Bool
-pesoValido peso = peso > 0
+pesoValido peso = numeroFinito peso && peso > 0
+
+-- Double também representa NaN e infinitos, que não são valores acadêmicos.
+numeroFinito :: Double -> Bool
+numeroFinito valor = not (isNaN valor || isInfinite valor)
 
 
 -- Cria uma função de média com pesos fixos.
