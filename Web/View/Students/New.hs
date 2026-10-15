@@ -6,20 +6,20 @@ data NewView = NewView { student :: Student }
 instance View NewView where
     html NewView { .. } = [hsx|
         {breadcrumb}
-        <h1>New Student</h1>
+        <h1>Novo estudante</h1>
         {renderForm student}
     |]
         where
             breadcrumb = renderBreadcrumb
-                [ breadcrumbLink "Students" StudentsAction
-                , breadcrumbText "New Student"
+                [ breadcrumbLink "Estudantes" StudentsAction
+                , breadcrumbText "Novo estudante"
                 ]
 
 renderForm :: Student -> Html
 renderForm student = formFor student [hsx|
-    {(textField #name)}
-    {(textField #email)}
-    {(textField #enrollmentNumber)}
-    {submitButton}
+    {(textField #name) { fieldLabel = "Nome" }}
+    {(textField #email) { fieldLabel = "E-mail" }}
+    {(textField #enrollmentNumber) { fieldLabel = "Número de matrícula" }}
+    {submitButton { label = "Salvar" }}
 
 |]

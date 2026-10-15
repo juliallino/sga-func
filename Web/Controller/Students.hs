@@ -16,15 +16,15 @@ instance Controller StudentsController where
         render NewView { .. }
 
     action ShowStudentAction { studentId } = do
-        student <- fetch studentId
+        student <- fetchOr404 studentId
         render ShowView { .. }
 
     action EditStudentAction { studentId } = do
-        student <- fetch studentId
+        student <- fetchOr404 studentId
         render EditView { .. }
 
     action UpdateStudentAction { studentId } = do
-        student <- fetch studentId
+        student <- fetchOr404 studentId
         let studentValidado = buildStudent student
         studentComEmailValidado <-
             withCustomErrorMessageIO
@@ -42,7 +42,7 @@ instance Controller StudentsController where
             Left student -> render EditView { .. }
             Right student -> do
                 student <- student |> updateRecord
-                setSuccessMessage "Student updated"
+                setSuccessMessage "Estudante atualizado com sucesso."
                 redirectTo EditStudentAction { studentId }
             ) studentComMatriculaValidada
 
@@ -68,19 +68,25 @@ instance Controller StudentsController where
             Left student -> render NewView { .. }
             Right student -> do
                 student <- student |> createRecord
-                setSuccessMessage "Student created"
+                setSuccessMessage "Estudante cadastrado com sucesso."
                 redirectTo StudentsAction
             ) studentComMatriculaValidada
 
     action DeleteStudentAction { studentId } = do
-        student <- fetch studentId
-        deleteRecord student
-        setSuccessMessage "Student deleted"
+        student <- fetchOr404 studentId
+        dependencias <- query @Enrollment
+            |> filterWhere (#studentId, unpackId studentId)
+            |> fetchOneOrNothing
+        if isJust dependencias
+            then setErrorMessage "Não é possível excluir um estudante com matrículas."
+            else do
+                deleteRecord student
+                setSuccessMessage "Estudante excluído com sucesso."
         redirectTo StudentsAction
 
 buildStudent student = student
     |> fill @'["name", "email", "enrollmentNumber"]
-    |> validateField #name nonEmpty
-    |> validateField #email nonEmpty
-    |> validateField #email isEmail
-    |> validateField #enrollmentNumber nonEmpty
+    |> validateField #name (withCustomErrorMessage "Informe o nome." nonEmpty)
+    |> validateField #email (withCustomErrorMessage "Informe o e-mail." nonEmpty)
+    |> validateField #email (withCustomErrorMessage "Informe um e-mail válido." isEmail)
+    |> validateField #enrollmentNumber (withCustomErrorMessage "Informe o número de matrícula." nonEmpty)

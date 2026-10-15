@@ -1,27 +1,20 @@
 module Web.View.Grades.New where
 import Web.View.Prelude
+import Web.View.Grades.Form (EnrollmentOption, renderForm)
 
-data NewView = NewView { grade :: Grade }
+data NewView = NewView
+    { grade :: Grade
+    , enrollmentOptions :: [EnrollmentOption]
+    }
 
 instance View NewView where
     html NewView { .. } = [hsx|
         {breadcrumb}
-        <h1>New Grade</h1>
-        {renderForm grade}
+        <h1>Nova nota</h1>
+        {renderForm grade enrollmentOptions}
     |]
         where
             breadcrumb = renderBreadcrumb
-                [ breadcrumbLink "Grades" GradesAction
-                , breadcrumbText "New Grade"
+                [ breadcrumbLink "Notas" GradesAction
+                , breadcrumbText "Nova nota"
                 ]
-
-renderForm :: Grade -> Html
-renderForm grade = formFor grade [hsx|
-    {- enrollmentId needs to be a selectField -}
-        {(textField #enrollmentId)}
-    {(textField #assessmentName)}
-    {(numberField #score)}
-    {(numberField #weight)}
-    {submitButton}
-
-|]

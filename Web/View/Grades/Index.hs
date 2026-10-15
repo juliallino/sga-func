@@ -7,15 +7,15 @@ instance View IndexView where
     html IndexView { .. } = [hsx|
         {breadcrumb}
 
-        <h1>Index<a href={pathTo NewGradeAction} class="btn btn-primary ms-4">+ New</a></h1>
+        <h1>Notas<a href={pathTo NewGradeAction} class="btn btn-primary ms-4">+ Nova nota</a></h1>
         <div class="table-responsive">
             <table class="table">
                 <thead>
                     <tr>
-                        <th>Enrollment Id</th>
-                        <th>Assessment Name</th>
-                        <th>Score</th>
-                        <th>Weight</th>
+                        <th>Matrícula</th>
+                        <th>Nome da avaliação</th>
+                        <th>Nota</th>
+                        <th>Peso</th>
                         <th></th>
                         <th></th>
                         <th></th>
@@ -28,7 +28,7 @@ instance View IndexView where
     |]
         where
             breadcrumb = renderBreadcrumb
-                [ breadcrumbLink "Grades" GradesAction
+                [ breadcrumbLink "Notas" GradesAction
                 ]
 
 renderGrade :: Grade -> Html
@@ -38,8 +38,8 @@ renderGrade grade = [hsx|
         <td>{grade.assessmentName}</td>
         <td>{grade.score}</td>
         <td>{grade.weight}</td>
-        <td><a href={ShowGradeAction grade.id}>Show</a></td>
-        <td><a href={EditGradeAction grade.id} class="text-muted">Edit</a></td>
-        <td><a href={DeleteGradeAction grade.id} class="js-delete text-muted">Delete</a></td>
+        <td><a href={ShowGradeAction grade.id}>Visualizar</a></td>
+        <td><a href={EditGradeAction grade.id} class="text-muted">Editar</a></td>
+        <td><a href={DeleteGradeAction grade.id} class="js-delete text-muted" data-confirm="Deseja realmente excluir este registro?">Excluir</a></td>
     </tr>
 |]

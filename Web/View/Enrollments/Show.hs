@@ -24,8 +24,8 @@ instance View ShowView where
             <dt>Data da matrícula</dt>
             <dd>{enrollment.enrollmentDate}</dd>
 
-            <dt>Status</dt>
-            <dd>{enrollment.status}</dd>
+            <dt>Situação</dt>
+            <dd>{enrollmentStatusLabel enrollment.status}</dd>
 
             <dt>Quantidade de avaliações</dt>
             <dd>{length grades}</dd>
@@ -37,9 +37,10 @@ instance View ShowView where
         where
             textoMedia = case media of
                 Just valor -> show valor
-                Nothing -> "Ainda não há avaliações"
+                Nothing | null grades -> "Ainda não há avaliações"
+                        | otherwise -> "Não foi possível calcular a média: verifique as notas e os pesos."
 
             breadcrumb = renderBreadcrumb
-                [ breadcrumbLink "Enrollments" EnrollmentsAction
+                [ breadcrumbLink "Matrículas" EnrollmentsAction
                 , breadcrumbText "Detalhes da matrícula"
                 ]

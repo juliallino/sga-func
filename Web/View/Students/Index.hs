@@ -7,14 +7,14 @@ instance View IndexView where
     html IndexView { .. } = [hsx|
         {breadcrumb}
 
-        <h1>Index<a href={pathTo NewStudentAction} class="btn btn-primary ms-4">+ New</a></h1>
+        <h1>Estudantes<a href={pathTo NewStudentAction} class="btn btn-primary ms-4">+ Novo estudante</a></h1>
         <div class="table-responsive">
             <table class="table">
                 <thead>
                     <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Enrollment Number</th>
+                        <th>Nome</th>
+                        <th>E-mail</th>
+                        <th>Número de matrícula</th>
                         <th></th>
                         <th></th>
                         <th></th>
@@ -27,7 +27,7 @@ instance View IndexView where
     |]
         where
             breadcrumb = renderBreadcrumb
-                [ breadcrumbLink "Students" StudentsAction
+                [ breadcrumbLink "Estudantes" StudentsAction
                 ]
 
 renderStudent :: Student -> Html
@@ -36,8 +36,8 @@ renderStudent student = [hsx|
         <td>{student.name}</td>
         <td>{student.email}</td>
         <td>{student.enrollmentNumber}</td>
-        <td><a href={ShowStudentAction student.id}>Show</a></td>
-        <td><a href={EditStudentAction student.id} class="text-muted">Edit</a></td>
-        <td><a href={DeleteStudentAction student.id} class="js-delete text-muted">Delete</a></td>
+        <td><a href={ShowStudentAction student.id}>Visualizar</a></td>
+        <td><a href={EditStudentAction student.id} class="text-muted">Editar</a></td>
+        <td><a href={DeleteStudentAction student.id} class="js-delete text-muted" data-confirm="Deseja realmente excluir este registro?">Excluir</a></td>
     </tr>
 |]

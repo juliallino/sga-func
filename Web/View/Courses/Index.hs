@@ -7,14 +7,14 @@ instance View IndexView where
     html IndexView { .. } = [hsx|
         {breadcrumb}
 
-        <h1>Index<a href={pathTo NewCourseAction} class="btn btn-primary ms-4">+ New</a></h1>
+        <h1>Cursos<a href={pathTo NewCourseAction} class="btn btn-primary ms-4">+ Novo curso</a></h1>
         <div class="table-responsive">
             <table class="table">
                 <thead>
                     <tr>
-                        <th>Name</th>
-                        <th>Code</th>
-                        <th>Workload</th>
+                        <th>Nome</th>
+                        <th>Código</th>
+                        <th>Carga horária</th>
                         <th></th>
                         <th></th>
                         <th></th>
@@ -27,7 +27,7 @@ instance View IndexView where
     |]
         where
             breadcrumb = renderBreadcrumb
-                [ breadcrumbLink "Courses" CoursesAction
+                [ breadcrumbLink "Cursos" CoursesAction
                 ]
 
 renderCourse :: Course -> Html
@@ -36,8 +36,8 @@ renderCourse course = [hsx|
         <td>{course.name}</td>
         <td>{course.code}</td>
         <td>{course.workload}</td>
-        <td><a href={ShowCourseAction course.id}>Show</a></td>
-        <td><a href={EditCourseAction course.id} class="text-muted">Edit</a></td>
-        <td><a href={DeleteCourseAction course.id} class="js-delete text-muted">Delete</a></td>
+        <td><a href={ShowCourseAction course.id}>Visualizar</a></td>
+        <td><a href={EditCourseAction course.id} class="text-muted">Editar</a></td>
+        <td><a href={DeleteCourseAction course.id} class="js-delete text-muted" data-confirm="Deseja realmente excluir este registro?">Excluir</a></td>
     </tr>
 |]

@@ -18,4 +18,4 @@ main = do
         hspec do
             describe "Database" do
                 it "can execute a query" do
-                    sqlExecDiscardResult "SELECT 1" ()
+                    unsafeSqlExecDiscardResult "SELECT 1" ()

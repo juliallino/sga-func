@@ -16,8 +16,10 @@ O projeto contempla funcionalidades de gestão acadêmica, incluindo:
 - 👨‍🎓 Cadastro e gerenciamento de estudantes.
 - 📚 Gerenciamento de cursos e disciplinas.
 - 📝 Controle de matrículas e notas.
-- 📊 Geração de relatórios acadêmicos.
-- 🔐 Controle de acesso por perfis de usuário (*Roles*).
+- 📊 Cálculo da média ponderada por matrícula.
+
+Autenticação, controle de acesso por papéis (*roles*) e relatórios acadêmicos
+completos ainda estão pendentes. As rotas acadêmicas atualmente são públicas.
 
 ---
 
@@ -54,7 +56,7 @@ echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
 
 Garanta que os binários do Nix estejam disponíveis no `PATH`:
 
-echo 'export PATH="HOME/.nix−profile/bin:PATH"' >> ~/.bashrc
+echo 'export PATH="$HOME/.nix-profile/bin:$PATH"' >> ~/.bashrc
 
 source ~/.bashrc
 
@@ -74,8 +76,13 @@ cd sga-func
 
 Dentro do diretório do projeto, execute:
 
+direnv allow
+
 ./start
 
+O comando `./start` chama `devenv up` e exige que o ambiente de
+desenvolvimento esteja carregado. Com direnv, aguarde o carregamento após
+autorizar o `.envrc`.
 
 Na primeira execução, o Nix baixará e configurará as dependências necessárias para o ambiente de desenvolvimento, incluindo as ferramentas do Haskell e do PostgreSQL, conforme definido na configuração do projeto.
 
@@ -113,6 +120,36 @@ nix flake check --impure
 
 
 Esse comando executa as verificações e os testes definidos na configuração do projeto, conforme as condições do ambiente local.
+
+Para executar diretamente os testes de domínio no ambiente de desenvolvimento:
+
+```bash
+runghc -XBlockArguments Test/Main.hs
+```
+
+Para testar os CRUDs com escrita, use exclusivamente o executor isolado:
+
+```bash
+python3 Test/run-crud-tests.py
+```
+
+Ele cria um cluster PostgreSQL temporário em `/tmp`, importa o schema atual e
+encerra o servidor ao terminar. Não usa a conexão do banco de desenvolvimento
+ou produção. Os arquivos temporários são preservados para inspeção.
+Esta suíte é executada manualmente; ainda não está conectada ao workflow de CI.
+
+Exemplos para a apresentação:
+
+```bash
+runghc -i. Examples/Grade.hs
+```
+
+O banco novo criado a partir do schema e um banco atualizado por migrações são
+caminhos distintos. A migração `1792029677.sql`, preparada para restaurar as
+FKs e a unicidade de matrículas em bancos existentes, ainda depende de
+autorização para execução. Não reaplique as migrações antigas sobre um banco
+criado a partir do schema atual. O histórico antigo contém operações de remoção
+de dados e um default `'Active'` incompatível com o enum declarado.
 
 ### Integração Contínua com GitHub Actions
 

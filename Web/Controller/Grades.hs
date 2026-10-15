@@ -1,7 +1,7 @@
 module Web.Controller.Grades where
 
 import Web.Controller.Prelude
-import qualified Application.Domain.Grade as GradeDomain
+import Web.View.Grades.Form (EnrollmentOption, buildEnrollmentOptions)
 import Web.View.Grades.Index
 import Web.View.Grades.New
 import Web.View.Grades.Edit
@@ -14,18 +14,21 @@ instance Controller GradesController where
 
     action NewGradeAction = do
         let grade = newRecord
+        enrollmentOptions <- loadEnrollmentOptions
         render NewView { .. }
 
     action ShowGradeAction { gradeId } = do
-        grade <- fetch gradeId
+        grade <- fetchOr404 gradeId
         render ShowView { .. }
 
     action EditGradeAction { gradeId } = do
-        grade <- fetch gradeId
+        grade <- fetchOr404 gradeId
+        enrollmentOptions <- loadEnrollmentOptions
         render EditView { .. }
 
     action UpdateGradeAction { gradeId } = do
-        grade <- fetch gradeId
+        grade <- fetchOr404 gradeId
+        enrollmentOptions <- loadEnrollmentOptions
         grade
             |> buildGrade
             |> ifValid \case
@@ -38,11 +41,12 @@ instance Controller GradesController where
                             render EditView { .. }
                         else do
                             grade <- grade |> updateRecord
-                            setSuccessMessage "Grade updated"
+                            setSuccessMessage "Nota atualizada com sucesso."
                             redirectTo EditGradeAction { .. }
 
     action CreateGradeAction = do
         let grade = newRecord @Grade
+        enrollmentOptions <- loadEnrollmentOptions
         grade
             |> buildGrade
             |> ifValid \case
@@ -55,20 +59,20 @@ instance Controller GradesController where
                             render NewView { .. }
                         else do
                             grade <- grade |> createRecord
-                            setSuccessMessage "Grade created"
+                            setSuccessMessage "Nota cadastrada com sucesso."
                             redirectTo GradesAction
 
     action DeleteGradeAction { gradeId } = do
-        grade <- fetch gradeId
+        grade <- fetchOr404 gradeId
         deleteRecord grade
-        setSuccessMessage "Grade deleted"
+        setSuccessMessage "Nota excluída com sucesso."
         redirectTo GradesAction
 
 buildGrade grade = grade
     |> fill @'["enrollmentId", "assessmentName", "score", "weight"]
-    |> validateField #assessmentName nonEmpty
-    |> validateField #score (isInRange (0, 10))
-    |> validateField #weight (isGreaterThan 0)
+    |> validateField #assessmentName (withCustomErrorMessage "Informe o nome da avaliação." nonEmpty)
+    |> validateField #score (withCustomErrorMessage "A nota deve estar entre 0 e 10." (isInRange (0, 10)))
+    |> validateField #weight (withCustomErrorMessage "O peso deve ser maior que zero." (isGreaterThan 0))
 
 validarMatricula :: (?modelContext :: ModelContext) => Grade -> IO Bool
 validarMatricula grade = do
@@ -77,3 +81,11 @@ validarMatricula grade = do
         |> fetchOneOrNothing
 
     pure (isJust resultado)
+
+
+loadEnrollmentOptions :: (?modelContext :: ModelContext) => IO [EnrollmentOption]
+loadEnrollmentOptions = do
+    enrollments <- query @Enrollment |> fetch
+    students <- query @Student |> fetch
+    courses <- query @Course |> fetch
+    pure (buildEnrollmentOptions enrollments students courses)

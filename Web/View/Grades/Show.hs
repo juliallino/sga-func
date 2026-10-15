@@ -6,17 +6,17 @@ data ShowView = ShowView { grade :: Grade }
 instance View ShowView where
     html ShowView { .. } = [hsx|
         {breadcrumb}
-        <h1>Show Grade</h1>
+        <h1>Detalhes da nota</h1>
         <dl>
-            <dt>Enrollment Id</dt><dd>{grade.enrollmentId}</dd>
-            <dt>Assessment Name</dt><dd>{grade.assessmentName}</dd>
-            <dt>Score</dt><dd>{grade.score}</dd>
-            <dt>Weight</dt><dd>{grade.weight}</dd>
+            <dt>Matrícula</dt><dd>{grade.enrollmentId}</dd>
+            <dt>Nome da avaliação</dt><dd>{grade.assessmentName}</dd>
+            <dt>Nota</dt><dd>{grade.score}</dd>
+            <dt>Peso</dt><dd>{grade.weight}</dd>
         </dl>
 
     |]
         where
             breadcrumb = renderBreadcrumb
-                            [ breadcrumbLink "Grades" GradesAction
-                            , breadcrumbText "Show Grade"
+                            [ breadcrumbLink "Notas" GradesAction
+                            , breadcrumbText "Detalhes da nota"
                             ]

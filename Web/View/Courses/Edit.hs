@@ -6,20 +6,20 @@ data EditView = EditView { course :: Course }
 instance View EditView where
     html EditView { .. } = [hsx|
         {breadcrumb}
-        <h1>Edit Course</h1>
+        <h1>Editar curso</h1>
         {renderForm course}
     |]
         where
             breadcrumb = renderBreadcrumb
-                [ breadcrumbLink "Courses" CoursesAction
-                , breadcrumbText "Edit Course"
+                [ breadcrumbLink "Cursos" CoursesAction
+                , breadcrumbText "Editar curso"
                 ]
 
 renderForm :: Course -> Html
 renderForm course = formFor course [hsx|
-    {(textField #name)}
-    {(textField #code)}
-    {(numberField #workload)}
-    {submitButton}
+    {(textField #name) { fieldLabel = "Nome" }}
+    {(textField #code) { fieldLabel = "Código" }}
+    {(numberField #workload) { fieldLabel = "Carga horária" }}
+    {submitButton { label = "Salvar" }}
 
 |]

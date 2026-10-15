@@ -1,28 +1,22 @@
 module Web.View.Enrollments.New where
-import Web.View.Prelude
 
-data NewView = NewView { enrollment :: Enrollment }
+import Web.View.Prelude
+import Web.View.Enrollments.Form (renderForm)
+
+data NewView = NewView
+    { enrollment :: Enrollment
+    , students :: [Student]
+    , courses :: [Course]
+    }
 
 instance View NewView where
     html NewView { .. } = [hsx|
         {breadcrumb}
-        <h1>New Enrollment</h1>
-        {renderForm enrollment}
+        <h1>Nova matrícula</h1>
+        {renderForm enrollment students courses}
     |]
         where
             breadcrumb = renderBreadcrumb
-                [ breadcrumbLink "Enrollments" EnrollmentsAction
-                , breadcrumbText "New Enrollment"
+                [ breadcrumbLink "Matrículas" EnrollmentsAction
+                , breadcrumbText "Nova matrícula"
                 ]
-
-renderForm :: Enrollment -> Html
-renderForm enrollment = formFor enrollment [hsx|
-    {- studentId needs to be a selectField -}
-        {(textField #studentId)}
-    {- courseId needs to be a selectField -}
-        {(textField #courseId)}
-    {(dateField #enrollmentDate)}
-    {(textField #status)}
-    {submitButton}
-
-|]
