@@ -7,6 +7,11 @@ import Web.Types
 -- Additional [routes|...|] blocks get appended by `new-controller`.
 [routes|StaticController
 GET /    WelcomeAction
+GET /MyProfile MyProfileAction
+GET /MySubjects StudentSubjectsAction
+GET /MyAverages StudentAveragesAction
+GET /TeacherStudents TeacherStudentsAction
+GET /TeacherAssessments TeacherAssessmentsAction
 |]
 
 [routes|StudentsController
@@ -52,3 +57,44 @@ POST /UpdateGrade?gradeId UpdateGradeAction
 DELETE /DeleteGrade?gradeId DeleteGradeAction
 |]
 
+
+[routes|TeachersController
+GET /Teachers TeachersAction
+GET /NewTeacher NewTeacherAction
+POST /CreateTeacher CreateTeacherAction
+GET /ShowTeacher?teacherId ShowTeacherAction
+GET /EditTeacher?teacherId EditTeacherAction
+POST /UpdateTeacher?teacherId UpdateTeacherAction
+DELETE /DeleteTeacher?teacherId DeleteTeacherAction
+|]
+
+[routes|SubjectsController
+GET /Subjects SubjectsAction
+GET /NewSubject NewSubjectAction
+POST /CreateSubject CreateSubjectAction
+GET /ShowSubject?subjectId ShowSubjectAction
+GET /EditSubject?subjectId EditSubjectAction
+POST /UpdateSubject?subjectId UpdateSubjectAction
+DELETE /DeleteSubject?subjectId DeleteSubjectAction
+|]
+
+[routes|SessionsController
+GET /Login NewSessionAction
+POST /Login CreateSessionAction
+POST /Logout DeleteSessionAction
+|]
+
+[routes|UsersController
+GET /Users UsersAction
+GET /NewUser NewUserAction
+POST /CreateUser CreateUserAction
+GET /EditUser?userId EditUserAction
+POST /UpdateUser?userId UpdateUserAction
+DELETE /DeleteUser?userId DeleteUserAction
+|]
+
+[routes|TeacherSubjectsController
+GET /TeacherSubjects TeacherSubjectsAction
+POST /CreateTeacherSubject CreateTeacherSubjectAction
+DELETE /DeleteTeacherSubject?teacherSubjectId DeleteTeacherSubjectAction
+|]

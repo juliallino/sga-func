@@ -9,17 +9,25 @@ import Web.View.Enrollments.Show
 
 instance Controller EnrollmentsController where
     action EnrollmentsAction = do
-        enrollments <- query @Enrollment |> fetch
+        requireLogin
+        enrollments <- visibleEnrollments
+        students <- query @Student |> filterWhereIn (#id, map (Id . (.studentId)) enrollments) |> fetch
+        courses <- query @Course |> filterWhereIn (#id, map (Id . (.courseId)) enrollments) |> fetch
         render IndexView { .. }
 
     action NewEnrollmentAction = do
+        requireAdmin
         let enrollment = newRecord
         students <- query @Student |> fetch
         courses <- query @Course |> fetch
         render NewView { .. }
 
     action ShowEnrollmentAction { enrollmentId } = do
+        requireLogin
         enrollment <- fetchOr404 enrollmentId
+        requireEnrollment enrollment
+        student <- fetchOr404 (Id enrollment.studentId :: Id Student)
+        course <- fetchOr404 (Id enrollment.courseId :: Id Course)
         grades <- query @Grade
             |> filterWhere (#enrollmentId, unpackId enrollmentId)
             |> fetch
@@ -27,12 +35,14 @@ instance Controller EnrollmentsController where
         render ShowView { .. }
         
     action EditEnrollmentAction { enrollmentId } = do
+        requireAdmin
         enrollment <- fetchOr404 enrollmentId
         students <- query @Student |> fetch
         courses <- query @Course |> fetch
         render EditView { .. }
 
     action UpdateEnrollmentAction { enrollmentId } = do
+        requireAdmin
         enrollment <- fetchOr404 enrollmentId
         students <- query @Student |> fetch
         courses <- query @Course |> fetch
@@ -45,6 +55,7 @@ instance Controller EnrollmentsController where
                 redirectTo EditEnrollmentAction { .. }
 
     action CreateEnrollmentAction = do
+        requireAdmin
         let enrollment = newRecord @Enrollment
         students <- query @Student |> fetch
         courses <- query @Course |> fetch
@@ -57,6 +68,7 @@ instance Controller EnrollmentsController where
                 redirectTo EnrollmentsAction
 
     action DeleteEnrollmentAction { enrollmentId } = do
+        requireAdmin
         enrollment <- fetchOr404 enrollmentId
         dependencias <- query @Grade
             |> filterWhere (#enrollmentId, unpackId enrollmentId)
@@ -69,17 +81,11 @@ instance Controller EnrollmentsController where
         redirectTo EnrollmentsAction
 
 buildEnrollment enrollment = enrollment
-    |> fill @'["studentId", "courseId", "enrollmentDate", "status"]
-    |> validarDataMatricula
+    -- Leave the date untouched: PostgreSQL uses CURRENT_DATE on creation,
+    -- and updates preserve the stored creation date, ignoring request parameters.
+    |> fill @'["studentId", "courseId", "status"]
 
--- fill reports malformed dates, but silently ignores missing parameters.
-validarDataMatricula enrollment =
-    case paramOrError @Day "enrollmentDate" of
-        Left ParamNotFoundException {} ->
-            attachFailure #enrollmentDate "Informe uma data de matrícula válida." enrollment
-        _ -> enrollment
-
--- Do not query references until UUID, date and enum parsing has succeeded.
+-- Only query references after UUID and enum parsing has succeeded.
 validarEnrollment :: (?modelContext :: ModelContext) => Enrollment -> IO Enrollment
 validarEnrollment enrollment
     | not (isValid enrollment) = pure enrollment
@@ -98,7 +104,7 @@ validarEnrollment enrollment
                 then attachFailure #courseId "O curso informado não existe." comEstudante
                 else comEstudante
         pure (if duplicada
-            then attachFailure #courseId "Este aluno já está matriculado nesta disciplina." comCurso
+            then attachFailure #courseId "Este aluno já está matriculado neste curso." comCurso
             else comCurso)
 
 calcularMediaEnrollment :: [Grade] -> Maybe Double

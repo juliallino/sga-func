@@ -7,7 +7,10 @@ import Generated.Types
 data WebApplication = WebApplication deriving (Eq, Show)
 
 
-data StaticController = WelcomeAction deriving (Eq, Show, Data)
+data StaticController
+    = WelcomeAction | MyProfileAction | StudentSubjectsAction | StudentAveragesAction
+    | TeacherStudentsAction | TeacherAssessmentsAction
+    deriving (Eq, Show, Data)
 
 data StudentsController
     = StudentsAction
@@ -47,4 +50,39 @@ data GradesController
     | EditGradeAction { gradeId :: !(Id Grade) }
     | UpdateGradeAction { gradeId :: !(Id Grade) }
     | DeleteGradeAction { gradeId :: !(Id Grade) }
+    deriving (Eq, Show, Data)
+
+data TeachersController
+    = TeachersAction
+    | NewTeacherAction
+    | ShowTeacherAction { teacherId :: !(Id Teacher) }
+    | CreateTeacherAction
+    | EditTeacherAction { teacherId :: !(Id Teacher) }
+    | UpdateTeacherAction { teacherId :: !(Id Teacher) }
+    | DeleteTeacherAction { teacherId :: !(Id Teacher) }
+    deriving (Eq, Show, Data)
+
+data SubjectsController
+    = SubjectsAction
+    | NewSubjectAction
+    | ShowSubjectAction { subjectId :: !(Id Subject) }
+    | CreateSubjectAction
+    | EditSubjectAction { subjectId :: !(Id Subject) }
+    | UpdateSubjectAction { subjectId :: !(Id Subject) }
+    | DeleteSubjectAction { subjectId :: !(Id Subject) }
+    deriving (Eq, Show, Data)
+
+data SessionsController = NewSessionAction | CreateSessionAction | DeleteSessionAction
+    deriving (Eq, Show, Data)
+
+data UsersController
+    = UsersAction | NewUserAction | CreateUserAction
+    | EditUserAction { userId :: !(Id User) }
+    | UpdateUserAction { userId :: !(Id User) }
+    | DeleteUserAction { userId :: !(Id User) }
+    deriving (Eq, Show, Data)
+
+data TeacherSubjectsController
+    = TeacherSubjectsAction | CreateTeacherSubjectAction
+    | DeleteTeacherSubjectAction { teacherSubjectId :: !(Id TeacherSubject) }
     deriving (Eq, Show, Data)
