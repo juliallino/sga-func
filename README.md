@@ -38,72 +38,170 @@ professores ainda estão pendentes; veja a [revisão final](REVISAO_FINAL.md).
 
 ## 🚀 Como Rodar o Projeto Localmente
 
-**Sistema operacional:** Linux / Ubuntu
+Este roteiro parte de um computador sem o ambiente do projeto instalado.
+Os comandos abaixo são para **Linux/Ubuntu com Bash**, ambiente usado pela equipe.
 
-Siga os passos abaixo para clonar o repositório e executar a aplicação em seu ambiente local.
+### 1. Requisitos
 
-### 1. Pré-requisitos
+- Linux/Ubuntu, navegador e conexão com a internet.
+- Permissão de administrador (`sudo`) para instalar as ferramentas.
+- Git, curl, Nix e direnv, instalados conforme os passos abaixo.
 
-Certifique-se de ter o **Nix** e o **direnv** instalados e configurados.
+**Não é necessário instalar Haskell, Cabal, IHP ou PostgreSQL separadamente:**
+o ambiente Nix do projeto fornece essas ferramentas.
 
-#### 1.1. Ativar as funcionalidades experimentais do Nix
+### 2. Instalar as ferramentas básicas
 
-Caso ainda não tenha ativado as funcionalidades experimentais do Nix, execute:
+No terminal:
 
+```bash
+sudo apt update
+sudo apt install -y git curl direnv
+```
+
+Instale o Nix conforme a [documentação oficial](https://nixos.org/download/):
+
+```bash
+curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install | sh -s -- --daemon
+```
+
+Siga as instruções do instalador. Depois, **feche e abra o terminal** e confira:
+
+```bash
+nix --version
+git --version
+direnv --version
+```
+
+### 3. Configurar Nix e direnv
+
+Ative os recursos usados pelo projeto:
+
+```bash
 mkdir -p ~/.config/nix
+echo 'experimental-features = nix-command flakes' >> ~/.config/nix/nix.conf
+```
 
-echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
+Se essa configuração já existir, não precisa adicioná-la novamente.
+Se já houver uma linha `experimental-features`, inclua `nix-command` e `flakes`
+nela em vez de criar uma segunda linha.
 
+Para quem usa Bash, habilite o carregamento automático do ambiente:
 
-#### 1.2. Configurar o PATH
-
-Garanta que os binários do Nix estejam disponíveis no `PATH`:
-
-echo 'export PATH="$HOME/.nix-profile/bin:$PATH"' >> ~/.bashrc
-
+```bash
+echo 'eval "$(direnv hook bash)"' >> ~/.bashrc
 source ~/.bashrc
+```
 
+Essa configuração do Bash só precisa ser feita uma vez.
 
-> **Observação:** Se as funcionalidades experimentais já estiverem configuradas, não é necessário adicionar a mesma configuração novamente.
+### 4. Clonar o projeto
 
-### 2. Clonar o Repositório
-
-Clone o repositório e acesse o diretório do projeto:
-
+```bash
 git clone https://github.com/juliallino/sga-func.git
-
 cd sga-func
+```
 
+Se já clonou, basta entrar na pasta do projeto.
 
-### 3. Iniciar o Ambiente de Desenvolvimento
+### 5. Carregar o ambiente e iniciar
 
-Dentro do diretório do projeto, execute:
+Dentro da pasta do projeto:
 
 ```bash
 direnv allow
-direnv exec . ./start
 ```
 
-O comando `./start` chama `devenv up` e exige que o ambiente de
-desenvolvimento esteja carregado. Com direnv, aguarde o carregamento após
-autorizar o `.envrc`.
+Aguarde o download e a configuração das dependências. **Na primeira execução,
+essa etapa pode demorar bastante.** Depois execute:
 
-Na primeira execução, o Nix baixará e configurará as dependências necessárias para o ambiente de desenvolvimento, incluindo as ferramentas do Haskell e do PostgreSQL, conforme definido na configuração do projeto.
+```bash
+direnv exec . bash ./start
+```
 
-Aguarde até que a inicialização seja concluída.
+O script `start` chama `devenv up`. Mantenha o terminal aberto enquanto estiver
+usando a aplicação e aguarde a inicialização dos serviços e a compilação.
 
----
-
-## 🌐 Endereços Locais
-
-Após executar o comando `./start`, acesse os seguintes endereços no navegador:
+### 6. Abrir no navegador
 
 | Serviço | Endereço |
 |:---|:---|
-| 🌍 Aplicação Web | [http://localhost:8000](http://localhost:8000) |
-| 🛠️ IHP Dev Server / Schema Designer (IDE) | [http://localhost:8001](http://localhost:8001) |
+| Aplicação | [http://localhost:8000](http://localhost:8000) |
+| IHP Dev Server / Schema Designer / Data Browser | [http://localhost:8001](http://localhost:8001) |
 
-> **Nota:** Os endereços estarão disponíveis enquanto os respectivos serviços estiverem em execução.
+O PostgreSQL faz parte do ambiente local. **O clone não traz os dados nem as
+contas do computador dos outros integrantes.** Os endereços só ficam disponíveis
+com os respectivos serviços em execução.
+
+**Banco novo:** use o schema atual em `Application/Schema.sql`. Não execute as
+migrações antigas indiscriminadamente: o histórico contém operações de remoção
+de dados e incompatibilidades descritas na seção de banco deste README.
+Não importe o schema sobre um banco que já tenha dados.
+
+### 7. Criar o primeiro usuário para entrar
+
+O projeto exige login, mas `Application/Fixtures.sql` está vazio e ainda não
+existe cadastro público de contas. Para criar uma conta local de administrador:
+
+1. Com o projeto rodando, abra **outro terminal** na pasta do projeto e execute:
+
+   ```bash
+   direnv exec . ghci
+   ```
+
+2. No prompt do Haskell, execute, substituindo o texto por uma senha local:
+
+   ```haskell
+   :set -XOverloadedStrings
+   import IHP.AuthSupport.Authentication (hashPassword)
+   hashPassword "SUBSTITUA_POR_SUA_SENHA_LOCAL"
+   ```
+
+3. Copie o hash retornado, **sem as aspas externas**, e saia:
+
+   ```haskell
+   :quit
+   ```
+
+4. Abra [http://localhost:8001](http://localhost:8001), procure o **Data Browser**
+   e crie um registro na tabela `users`:
+
+   | Campo | Valor |
+   |:---|:---|
+   | `id` | Use o UUID gerado automaticamente |
+   | `name` | Seu nome |
+   | `email` | O e-mail escolhido para login |
+   | `password_hash` | O hash gerado no terminal |
+   | `role` | `RoleAdmin` |
+   | `failed_login_attempts` | `0` |
+   | `locked_at` | Deixe nulo (`NULL`) |
+
+5. Salve e acesse [http://localhost:8000/Login](http://localhost:8000/Login)
+   usando o e-mail e a **senha original**, não o hash.
+
+Use uma senha exclusiva para desenvolvimento, pois esse procedimento a digita
+no console. Não coloque a senha original no campo `password_hash` nem salve
+credenciais no repositório.
+
+### 8. Rodar nas próximas vezes
+
+```bash
+cd sga-func
+direnv exec . bash ./start
+```
+
+Para encerrar, pressione **Ctrl+C** no terminal que está executando o projeto.
+
+### Problemas comuns
+
+| Problema | Como resolver |
+|:---|:---|
+| `nix: command not found` | Reabra o terminal após instalar o Nix. |
+| Ambiente bloqueado pelo direnv | Execute `direnv allow` dentro da pasta. |
+| `devenv: command not found` | Aguarde o ambiente carregar e use `direnv exec . bash ./start`. Se houve erro no carregamento, resolva o erro antes de iniciar. |
+| `./start: Permission denied` | Use `bash ./start`, como no roteiro. |
+| Porta 8000 ou 8001 ocupada | Encerre a outra instância ou programa que está usando a porta. |
+| Login não funciona no banco novo | Crie a conta do passo 7; não há credenciais padrão. |
 
 ---
 
