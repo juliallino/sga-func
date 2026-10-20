@@ -8,11 +8,6 @@ instance CanSelect Student where
     selectLabel student = student.name <> " - Matrícula " <> student.enrollmentNumber
     selectValue student = unpackId student.id
 
-instance CanSelect Course where
-    type SelectValue Course = UUID
-    selectLabel course = course.name <> " - " <> course.code
-    selectValue course = unpackId course.id
-
 renderForm :: Enrollment -> [Student] -> [Course] -> Html
 renderForm enrollment students courses = formFor enrollment [hsx|
     {(selectField #studentId students)
@@ -21,7 +16,10 @@ renderForm enrollment students courses = formFor enrollment [hsx|
     {(selectField #courseId courses)
         { fieldLabel = "Curso", placeholder = "Selecione um curso", required = True }}
     {when (null courses) noCourses}
-    {(dateField #enrollmentDate) { fieldLabel = "Data da matrícula" }}
+    <div class="mb-3">
+        <span class="form-label">Data da matrícula</span>
+        <p class="form-text">{if isNew enrollment then "Definida automaticamente no cadastro." else show enrollment.enrollmentDate}</p>
+    </div>
     {(selectField #status [Active, Suspended, Completed]) { fieldLabel = "Situação", fieldValue = inputValue enrollment.status, placeholder = "Selecione uma situação" }}
     {submitButton { label = "Salvar" }}
 |]

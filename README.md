@@ -18,8 +18,11 @@ O projeto contempla funcionalidades de gestão acadêmica, incluindo:
 - 📝 Controle de matrículas e notas.
 - 📊 Cálculo da média ponderada por matrícula.
 
-Autenticação, controle de acesso por papéis (*roles*) e relatórios acadêmicos
-completos ainda estão pendentes. As rotas acadêmicas atualmente são públicas.
+Login, logout e controle de acesso por perfis estão implementados. As rotas
+acadêmicas exigem autenticação e verificações no servidor. O dashboard usa
+contagens reais do PostgreSQL. A migração de matrículas de curso para disciplina,
+a gestão de contas além da consulta e a gestão visual de autorizações de
+professores ainda estão pendentes; veja a [revisão final](REVISAO_FINAL.md).
 
 ---
 
@@ -76,9 +79,10 @@ cd sga-func
 
 Dentro do diretório do projeto, execute:
 
+```bash
 direnv allow
-
-./start
+direnv exec . ./start
+```
 
 O comando `./start` chama `devenv up` e exige que o ambiente de
 desenvolvimento esteja carregado. Com direnv, aguarde o carregamento após
@@ -100,6 +104,60 @@ Após executar o comando `./start`, acesse os seguintes endereços no navegador:
 | 🛠️ IHP Dev Server / Schema Designer (IDE) | [http://localhost:8001](http://localhost:8001) |
 
 > **Nota:** Os endereços estarão disponíveis enquanto os respectivos serviços estiverem em execução.
+
+---
+
+## Interface do Portal Acadêmico
+
+O SGA utiliza as views HSX e o Bootstrap existentes, com identidade azul-escuro,
+branco e cinza-claro, menu lateral responsivo, ícones SVG locais e logout por POST.
+O dashboard de Admin consulta no PostgreSQL os totais de estudantes, professores,
+cursos, disciplinas e matrículas. Não há indicadores fictícios.
+
+Estudantes têm menu próprio, perfil, matrículas, notas e médias ponderadas.
+Professores visualizam somente disciplinas autorizadas. Os portais explicam a
+indisponibilidade de consultas e lançamentos que dependem da conversão das
+matrículas antigas de curso para disciplina; nenhum vínculo é presumido pelo curso.
+A tela de Usuários oferece consulta exclusiva para Admin, sem senhas ou hashes.
+
+Detalhes, arquivos e validações: [documentação da interface](docs/interface-portal.md).
+
+---
+
+## Professores e disciplinas
+
+O menu principal oferece acesso aos dois novos CRUDs, com cadastro,
+listagem, detalhes, edição e exclusão:
+
+| Cadastro | Endereço | Campos |
+|:---|:---|:---|
+| Professores | http://localhost:8000/Teachers | Nome, e-mail, número de registro e especialização opcional |
+| Disciplinas | http://localhost:8000/Subjects | Nome, código, carga horária e curso |
+
+Cadastre primeiro um curso para criar disciplinas. Os formulários mostram
+os erros sem descartar o curso selecionado. E-mails e registros de professores,
+e códigos de disciplinas, devem ser únicos nos respectivos cadastros. A carga
+horária deve ser positiva e o curso deve existir.
+
+Para testar manualmente, crie um registro em cada cadastro, consulte os
+seus detalhes e edite-o. Tente enviar nome vazio, e-mail inválido, registro ou
+código repetido e carga horária zero: o formulário deve explicar o erro.
+Tente excluir um curso com disciplina: a operação deve ser bloqueada.
+Excluir uma disciplina preserva seu curso; excluir um professor preserva sua
+conta de usuário, quando houver. Autorizações em `teacher_subjects` precisam
+ser revogadas antes de excluir professor ou disciplina. Matrículas ainda
+referenciam cursos; essa conversão depende de mapeamento real.
+
+Com o ambiente IHP carregado, execute os testes em PostgreSQL temporário:
+
+```bash
+python3 Test/run-crud-tests.py
+runghc -XBlockArguments Test/Main.hs
+```
+
+A suíte CRUD cobre os seis cadastros e usa exclusivamente seu banco isolado.
+Nenhuma migration adicional é necessária para esses CRUDs quando a etapa
+aditiva `1792451864` já estiver aplicada.
 
 ---
 
@@ -133,10 +191,14 @@ Para testar os CRUDs com escrita, use exclusivamente o executor isolado:
 python3 Test/run-crud-tests.py
 ```
 
-Ele cria um cluster PostgreSQL temporário em `/tmp`, importa o schema atual e
-encerra o servidor ao terminar. Não usa a conexão do banco de desenvolvimento
+O executor cria um cluster PostgreSQL temporário em `/tmp`, importa o schema atual,
+verifica as migrações aditivas em outro banco desse mesmo cluster e executa
+integração, CRUDs e autenticação/autorização. Encerra o servidor ao terminar. Não usa a conexão do banco de desenvolvimento
 ou produção. Os arquivos temporários são preservados para inspeção.
 Esta suíte é executada manualmente; ainda não está conectada ao workflow de CI.
+
+Roteiro dos 13 conceitos, com exemplos GHCi e resultados verificados:
+[APRESENTACAO_FUNCIONAL.md](APRESENTACAO_FUNCIONAL.md).
 
 Exemplos para a apresentação:
 
@@ -146,10 +208,24 @@ runghc -i. Examples/Grade.hs
 
 O banco novo criado a partir do schema e um banco atualizado por migrações são
 caminhos distintos. A migração `1792029677.sql`, preparada para restaurar as
-FKs e a unicidade de matrículas em bancos existentes, ainda depende de
-autorização para execução. Não reaplique as migrações antigas sobre um banco
-criado a partir do schema atual. O histórico antigo contém operações de remoção
+FKs e a unicidade em bancos legados, não foi aplicada ao banco local, pois
+essas constraints já existiam. As revisões aditivas `1792451864` e
+`1792459225` estão aplicadas. Não reaplique as migrações antigas sobre esse banco
+ou sobre um banco criado a partir do schema atual. O histórico antigo contém operações de remoção
 de dados e um default `'Active'` incompatível com o enum declarado.
+
+### Evolução para Portal Acadêmico
+
+A etapa aditiva da migration `1792451864.sql` acrescenta usuários,
+professores, disciplinas e validações de notas/pesos. Matrículas ainda
+referenciam cursos: a conversão para disciplinas aguarda mapeamento real.
+
+**Banco local criado pelo schema:** a execução validada usa
+`MINIMUM_REVISION=1792029677` com o executor `migrate` do IHP 1.6 para
+ignorar o histórico antigo incompatível. Não execute `migrate` sem esse
+filtro nesse banco, nem importe `Schema.sql` sobre dados existentes.
+Em outros bancos, confira primeiro o estado e o histórico aplicado.
+Veja o [registro da migração](docs/database/portal-academico-plano.md).
 
 ### Integração Contínua com GitHub Actions
 

@@ -6,7 +6,7 @@ data ShowView = ShowView { student :: Student }
 instance View ShowView where
     html ShowView { .. } = [hsx|
         {breadcrumb}
-        <h1>Detalhes do estudante</h1>
+        <h1>{if isStudent then "Meu perfil" else "Detalhes do estudante" :: Text}</h1>
         <dl>
             <dt>Nome</dt><dd>{student.name}</dd>
             <dt>E-mail</dt><dd>{student.email}</dd>

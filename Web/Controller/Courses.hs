@@ -8,22 +8,27 @@ import Web.View.Courses.Show
 
 instance Controller CoursesController where
     action CoursesAction = do
+        requireAdmin
         courses <- query @Course |> fetch
         render IndexView { .. }
 
     action NewCourseAction = do
+        requireAdmin
         let course = newRecord
         render NewView { .. }
 
     action ShowCourseAction { courseId } = do
+        requireAdmin
         course <- fetchOr404 courseId
         render ShowView { .. }
 
     action EditCourseAction { courseId } = do
+        requireAdmin
         course <- fetchOr404 courseId
         render EditView { .. }
 
     action UpdateCourseAction { courseId } = do
+        requireAdmin
         course <- fetchOr404 courseId
         let courseValidado = buildCourse course
 
@@ -43,6 +48,7 @@ instance Controller CoursesController where
             ) courseComCodigoValidado
 
     action CreateCourseAction = do
+        requireAdmin
         let course = newRecord @Course
         let courseValidado = buildCourse course
 
@@ -62,11 +68,17 @@ instance Controller CoursesController where
             ) courseComCodigoValidado
 
     action DeleteCourseAction { courseId } = do
+        requireAdmin
         course <- fetchOr404 courseId
         dependencias <- query @Enrollment
             |> filterWhere (#courseId, unpackId courseId)
             |> fetchOneOrNothing
-        if isJust dependencias
+        disciplinas <- query @Subject
+            |> filterWhere (#courseId, unpackId courseId)
+            |> fetchOneOrNothing
+        if isJust disciplinas
+            then setErrorMessage "Não é possível excluir um curso com disciplinas."
+            else if isJust dependencias
             then setErrorMessage "Não é possível excluir um curso com matrículas."
             else do
                 deleteRecord course

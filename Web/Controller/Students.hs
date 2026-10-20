@@ -8,22 +8,28 @@ import Web.View.Students.Show
 
 instance Controller StudentsController where
     action StudentsAction = do
-        students <- query @Student |> fetch
+        requireLogin
+        students <- visibleStudents
         render IndexView { .. }
 
     action NewStudentAction = do
+        requireAdmin
         let student = newRecord
         render NewView { .. }
 
     action ShowStudentAction { studentId } = do
+        requireLogin
+        requireStudent studentId
         student <- fetchOr404 studentId
         render ShowView { .. }
 
     action EditStudentAction { studentId } = do
+        requireAdmin
         student <- fetchOr404 studentId
         render EditView { .. }
 
     action UpdateStudentAction { studentId } = do
+        requireAdmin
         student <- fetchOr404 studentId
         let studentValidado = buildStudent student
         studentComEmailValidado <-
@@ -47,6 +53,7 @@ instance Controller StudentsController where
             ) studentComMatriculaValidada
 
     action CreateStudentAction = do
+        requireAdmin
         let student = newRecord @Student
         let studentValidado = buildStudent student
 
@@ -73,6 +80,7 @@ instance Controller StudentsController where
             ) studentComMatriculaValidada
 
     action DeleteStudentAction { studentId } = do
+        requireAdmin
         student <- fetchOr404 studentId
         dependencias <- query @Enrollment
             |> filterWhere (#studentId, unpackId studentId)
