@@ -32,6 +32,11 @@ data CoursesController
     | DeleteCourseAction { courseId :: !(Id Course) }
     deriving (Eq, Show, Data)
 
+data ReportsController
+    = DashboardAction
+    | DashboardDataAction
+    deriving (Eq, Show, Data)
+
 data EnrollmentsController
     = EnrollmentsAction
     | NewEnrollmentAction

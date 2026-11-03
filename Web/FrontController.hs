@@ -14,6 +14,7 @@ import Web.Controller.Enrollments ()
 import Web.Controller.Courses ()
 import Web.Controller.Students ()
 import Web.Controller.Static ()
+import Web.Controller.Reports ()
 
 instance FrontController WebApplication where
     controllers = 
@@ -27,8 +28,9 @@ instance FrontController WebApplication where
         , parseRoute @GradesController
         , parseRoute @EnrollmentsController
         , parseRoute @CoursesController
+	, parseRoute @ReportsController
         , parseRoute @StudentsController
-        ]
+	]
 
 instance InitControllerContext WebApplication where
     initContext = do

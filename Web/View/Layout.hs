@@ -62,6 +62,7 @@ roleMenu Roleadmin = [hsx|
     {navItem "students" "Estudantes" (pathTo StudentsAction)}
     {navItem "teachers" "Professores" (pathTo TeachersAction)}
     {navItem "courses" "Cursos" (pathTo CoursesAction)}
+    {navItem "grades" "Relatórios" (pathTo DashboardAction)}
     {navItem "subjects" "Disciplinas" (pathTo SubjectsAction)}
     {navItem "enrollments" "Matrículas" (pathTo EnrollmentsAction)}
     {navItem "grades" "Avaliações" (pathTo GradesAction)}

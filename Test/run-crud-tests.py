@@ -72,7 +72,7 @@ try:
     for line in ihp_ghci.read_text().splitlines():
         if line.startswith(':set -X') or line.startswith(':set -W'):
             flags.extend(line[5:].split())
-    for suite in ['Test/Integration.hs', 'Test/CRUD.hs', 'Test/Auth.hs']:
+    for suite in ['Test/Integration.hs', 'Test/CRUD.hs', 'Test/Auth.hs', 'Test/Relatorios.hs']:
         run([tool('runghc'), '-ignore-dot-ghci', '-i.', '-ibuild', '-iConfig', *flags, suite])
 finally:
     if started:

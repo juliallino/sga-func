@@ -35,6 +35,10 @@ POST /UpdateCourse?courseId UpdateCourseAction
 DELETE /DeleteCourse?courseId DeleteCourseAction
 |]
 
+[routes|ReportsController
+GET /Reports DashboardAction
+GET /ReportsData DashboardDataAction
+|]
 
 [routes|EnrollmentsController
 GET /Enrollments EnrollmentsAction
