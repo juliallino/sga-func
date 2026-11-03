@@ -1,0 +1,11 @@
+student_key,display_name,development_email,role,existing_account_policy,approval
+DEMO-V2-001,Pedro Lino,pedro@gmail.com,RoleStudent,abortar_em_colisao_sem_redefinir_senha,pendente
+DEMO-V2-002,Ana Beatriz,anabeatriz@gmail.com,RoleStudent,abortar_em_colisao_sem_redefinir_senha,pendente
+DEMO-V2-003,Lucas Oliveira,lucasoliveira@gmail.com,RoleStudent,abortar_em_colisao_sem_redefinir_senha,pendente
+DEMO-V2-004,Mariana Costa,marianacosta@gmail.com,RoleStudent,abortar_em_colisao_sem_redefinir_senha,pendente
+DEMO-V2-005,Gabriel Almeida,gabrielalmeida@gmail.com,RoleStudent,abortar_em_colisao_sem_redefinir_senha,pendente
+DEMO-V2-006,Sofia Martins,sofiamartins@gmail.com,RoleStudent,abortar_em_colisao_sem_redefinir_senha,pendente
+DEMO-V2-007,Rafael Ferreira,rafaelferreira@gmail.com,RoleStudent,abortar_em_colisao_sem_redefinir_senha,pendente
+DEMO-V2-008,Julia Santos,juliasantos@gmail.com,RoleStudent,abortar_em_colisao_sem_redefinir_senha,pendente
+DEMO-V2-009,Felipe Rocha,feliperocha@gmail.com,RoleStudent,abortar_em_colisao_sem_redefinir_senha,pendente
+DEMO-V2-010,Camila Ribeiro,camilaribeiro@gmail.com,RoleStudent,abortar_em_colisao_sem_redefinir_senha,pendente
