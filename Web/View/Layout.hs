@@ -107,7 +107,9 @@ navItem icon label url = [hsx|
             , (pathTo CoursesAction, ["/NewCourse", "/CreateCourse", "/EditCourse", "/UpdateCourse", "/ShowCourse"])
             , (pathTo SubjectsAction, ["/NewSubject", "/CreateSubject", "/EditSubject", "/UpdateSubject", "/ShowSubject"])
             , (pathTo EnrollmentsAction, ["/NewEnrollment", "/CreateEnrollment", "/EditEnrollment", "/UpdateEnrollment", "/ShowEnrollment"])
-            , (pathTo GradesAction, ["/NewGrade", "/CreateGrade", "/EditGrade", "/UpdateGrade", "/ShowGrade"])
+            , (if isTeacher then pathTo TeacherGradeEntryAction else pathTo GradesAction, ["/NewGrade", "/CreateGrade", "/EditGrade", "/UpdateGrade"])
+            , (if isTeacher then pathTo TeacherAssessmentsAction else pathTo GradesAction, ["/Grades", "/ShowGrade"])
+            , (pathTo MyProfileAction, if isStudent then ["/ShowStudent"] else [])
             , (pathTo TeacherStudentsAction, ["/TeacherSubjectStudents"])
             ]
 

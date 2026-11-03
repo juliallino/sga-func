@@ -440,6 +440,7 @@ h3 {
 }
 
 .metric-value {
+    overflow-wrap:anywhere;
     font-size:31px;
     line-height:1.1;
     font-weight:700;
@@ -1086,3 +1087,7 @@ h1>.btn {
 .dashboard-filters .form-actions { grid-column:1 / -1; margin-top:0; }
 @media(min-width:1201px) { .metrics-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } }
 @media(max-width:767px) { .dashboard-filters { grid-template-columns:1fr; } }
+
+/* Academic portal summaries share the established purple palette. */
+.academic-result { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin:16px 0; color:var(--sga-primary-dark); }
+.detail-actions + .metrics-grid { margin-top:24px; }

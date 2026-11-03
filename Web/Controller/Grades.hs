@@ -2,33 +2,41 @@ module Web.Controller.Grades where
 
 import Web.Controller.Prelude
 import qualified Application.Domain.Validation as AcademicValidation
-import Web.View.Grades.Form (EnrollmentOption, buildEnrollmentOptions)
+import Web.View.Grades.Form (EnrollmentOption (..), buildEnrollmentOptions)
 import Web.View.Grades.Index
 import Web.View.Grades.New
 import Web.View.Grades.Edit
 import Web.View.Grades.Show
 import IHP.LoginSupport.Helper.Controller (currentUser)
 import qualified Web.View.StudentPortal.Academic as StudentAcademic
+import Application.Helper.Portal (studentEnrollmentRows)
 
 instance Controller GradesController where
     action GradesAction = do
         requireLogin
         permitted <- visibleEnrollments
-        let selected = paramOrNothing @UUID "subjectId"
+        selected <- readGradeContext "subjectId"
         forEach selected (\subjectId -> requireSubject (Id subjectId))
+        selectedSubject <- case selected of
+            Nothing -> pure Nothing
+            Just value -> Just <$> fetchOr404 (Id value :: Id Subject)
         let enrollments = maybe permitted (\subjectId -> filter (\e -> e.subjectId == subjectId) permitted) selected
         grades <- query @Grade |> filterWhereIn (#enrollmentId, map (unpackId . (.id)) enrollments) |> fetch
         students <- query @Student |> filterWhereIn (#id, map (Id . (.studentId)) enrollments) |> fetch
         subjects <- query @Subject |> filterWhereIn (#id, map (Id . (.subjectId)) enrollments) |> fetch
         let enrollmentOptions = buildEnrollmentOptions enrollments students subjects
         if (currentUser @User).role_ == Rolestudent
-            then render StudentAcademic.NotesView { .. }
+            then do
+                rows <- studentEnrollmentRows enrollments subjects grades
+                render StudentAcademic.NotesView { .. }
             else render IndexView { .. }
 
     action NewGradeAction = do
         requireGradeWriter
-        let grade = newRecord @Grade
         enrollmentOptions <- loadEnrollmentOptions
+        selectedEnrollment <- readGradeContext "enrollmentId"
+        forEach selectedEnrollment (\value -> unless (any (\option -> option.optionId == value) enrollmentOptions) (earlyReturn renderNotFound))
+        let grade = maybe (newRecord @Grade) (\value -> newRecord @Grade |> set #enrollmentId value) selectedEnrollment
         render NewView { .. }
 
     action ShowGradeAction { gradeId } = do
@@ -106,7 +114,10 @@ validarMatricula grade = do
 
 loadEnrollmentOptions :: (?request :: Request, ?respond :: Respond, ?modelContext :: ModelContext) => IO [EnrollmentOption]
 loadEnrollmentOptions = do
-    enrollments <- visibleEnrollments
+    permitted <- visibleEnrollments
+    selected <- readGradeContext "subjectId"
+    forEach selected (\subjectId -> requireSubject (Id subjectId))
+    let enrollments = maybe permitted (\subjectId -> filter (\enrollment -> enrollment.subjectId == subjectId) permitted) selected
     students <- query @Student |> filterWhereIn (#id, map (Id . (.studentId)) enrollments) |> fetch
     subjects <- query @Subject |> filterWhereIn (#id, map (Id . (.subjectId)) enrollments) |> fetch
     pure (buildEnrollmentOptions enrollments students subjects)
@@ -119,3 +130,10 @@ validarPrecisaoPeso value
     | cents >= 1 && cents <= 99999 = Success
     | otherwise = Failure "O peso deve permanecer positivo após arredondamento para duas casas e não exceder 999,99."
     where cents = floor (value * 100 + 0.5) :: Integer
+
+-- Invalid context UUIDs must not silently widen a selected discipline.
+readGradeContext :: (?request :: Request, ?respond :: Respond) => ByteString -> IO (Maybe UUID)
+readGradeContext name = case paramOrError @UUID name of
+    Left ParamNotFoundException {} -> pure Nothing
+    Left _ -> earlyReturn renderNotFound
+    Right value -> pure (Just value)

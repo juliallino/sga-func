@@ -79,7 +79,7 @@ try:
     for line in ihp_ghci.read_text().splitlines():
         if line.startswith(':set -X') or line.startswith(':set -W'):
             flags.extend(line[5:].split())
-    for suite in ['Test/Integration.hs', 'Test/CRUD.hs', 'Test/Auth.hs', 'Test/TeacherSubjects.hs', 'Test/AcademicModel.hs','Test/Dashboard.hs']:
+    for suite in ['Test/Integration.hs', 'Test/CRUD.hs', 'Test/Auth.hs', 'Test/TeacherSubjects.hs', 'Test/AcademicModel.hs','Test/Dashboard.hs','Test/Portals.hs']:
         run([tool('runghc'), '-ignore-dot-ghci', '-i.', '-ibuild', '-iConfig', *flags, suite])
     run([sys.executable, str(root / 'Test/check-authorization-locks.py')])
 finally:
