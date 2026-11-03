@@ -37,3 +37,7 @@ devenv.local.yaml
 
 # pre-commit
 .pre-commit-config.yaml
+
+# Python helper bytecode is generated locally.
+__pycache__/
+*.pyc

@@ -22,7 +22,7 @@ Login, logout e controle de acesso por perfis estão implementados. As rotas
 acadêmicas exigem autenticação e verificações no servidor. O dashboard usa
 contagens reais do PostgreSQL. Matrículas relacionam estudantes a disciplinas;
 Admin gerencia os vínculos docentes e professores lançam e editam notas somente
-nas disciplinas autorizadas. Veja o [relatório da reorganização executada](docs/database/reorganizacao-executada-2026-11-02.md).
+nas disciplinas autorizadas. Veja o [guia de demonstração reproduzível](docs/dados-demonstracao.md).
 
 ---
 
@@ -36,179 +36,70 @@ nas disciplinas autorizadas. Veja o [relatório da reorganização executada](do
 
 ---
 
-## 🚀 Como Rodar o Projeto Localmente
+## 🚀 Instalação local e demonstração reproduzível
 
-Este roteiro parte de um computador sem o ambiente do projeto instalado.
-Os comandos abaixo são para **Linux/Ubuntu com Bash**, ambiente usado pela equipe.
-
-### 1. Requisitos
-
-- Linux/Ubuntu, navegador e conexão com a internet.
-- Permissão de administrador (`sudo`) para instalar as ferramentas.
-- Git, curl, Nix e direnv, instalados conforme os passos abaixo.
-
-**Não é necessário instalar Haskell, Cabal, IHP ou PostgreSQL separadamente:**
-o ambiente Nix do projeto fornece essas ferramentas.
-
-### 2. Instalar as ferramentas básicas
-
-No terminal:
+Use Linux, Git, Python 3, Nix com `nix-command flakes` e direnv. O Nix fornece
+Haskell, IHP 1.6 e PostgreSQL; não instale essas versões separadamente.
 
 ```bash
 sudo apt update
-sudo apt install -y git curl direnv
+sudo apt install -y git curl direnv python3
 ```
 
-Instale o Nix conforme a [documentação oficial](https://nixos.org/download/):
+Instale Nix pelo [procedimento oficial](https://nixos.org/download/), reabra o
+terminal, habilite `experimental-features = nix-command flakes` na configuração
+do Nix e `eval "$(direnv hook bash)"` na configuração do Bash. Não duplique linhas
+já existentes. Depois:
 
 ```bash
-curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install | sh -s -- --daemon
-```
-
-Siga as instruções do instalador. Depois, **feche e abra o terminal** e confira:
-
-```bash
-nix --version
-git --version
-direnv --version
-```
-
-### 3. Configurar Nix e direnv
-
-Ative os recursos usados pelo projeto:
-
-```bash
-mkdir -p ~/.config/nix
-echo 'experimental-features = nix-command flakes' >> ~/.config/nix/nix.conf
-```
-
-Se essa configuração já existir, não precisa adicioná-la novamente.
-Se já houver uma linha `experimental-features`, inclua `nix-command` e `flakes`
-nela em vez de criar uma segunda linha.
-
-Para quem usa Bash, habilite o carregamento automático do ambiente:
-
-```bash
-echo 'eval "$(direnv hook bash)"' >> ~/.bashrc
-source ~/.bashrc
-```
-
-Essa configuração do Bash só precisa ser feita uma vez.
-
-### 4. Clonar o projeto
-
-```bash
-git clone https://github.com/juliallino/sga-func.git
+git clone --branch sprint-3 https://github.com/juliallino/sga-func.git
 cd sga-func
-```
-
-Se já clonou, basta entrar na pasta do projeto.
-
-### 5. Carregar o ambiente e iniciar
-
-Dentro da pasta do projeto:
-
-```bash
 direnv allow
-```
-
-Aguarde o download e a configuração das dependências. **Na primeira execução,
-essa etapa pode demorar bastante.** Depois execute:
-
-```bash
 direnv exec . bash ./start
 ```
 
-O script `start` chama `devenv up`. Mantenha o terminal aberto enquanto estiver
-usando a aplicação e aguarde a inicialização dos serviços e a compilação.
+O primeiro carregamento pode demorar. Mantenha os serviços abertos; aplicação
+em http://localhost:8000 e IDE IHP em http://localhost:8001.
 
-### 6. Abrir no navegador
+O clone não contém contas nem dados de outro computador. Para uma demonstração
+nova e separada, siga [o guia completo](docs/dados-demonstracao.md):
 
-| Serviço | Endereço |
-|:---|:---|
-| Aplicação | [http://localhost:8000](http://localhost:8000) |
-| IHP Dev Server / Schema Designer / Data Browser | [http://localhost:8001](http://localhost:8001) |
+1. Inicie os serviços para disponibilizar o socket PostgreSQL local.
+2. Crie um banco dedicado `sga_demo` usando `scripts/seed-demo.py --init-db --schema-only`.
+   O wrapper aplica `IHPSchema.sql` e `Application/Schema.sql` somente em banco novo.
+3. Execute o seed pelo wrapper com `IHP_ENV=Development` e confirmação
+   `development-demo`; forneça senhas locais por entrada oculta ou ambiente.
+4. Reinicie a aplicação com `DATABASE_URL` apontando para esse banco.
+5. Acesse os perfis Admin, Teacher e Student com os logins descritos no guia
+   e as senhas que você definiu localmente.
 
-O PostgreSQL faz parte do ambiente local. **O clone não traz os dados nem as
-contas do computador dos outros integrantes.** Os endereços só ficam disponíveis
-com os respectivos serviços em execução.
+Não há senha padrão ou credenciais em arquivos versionados. `.env.example`
+contém apenas configuração de exemplo; `.env` permanece privado. Não publique
+chaves de sessão, dumps, backups, logs ou inventários da sua instalação.
 
-**Banco novo:** use o schema atual em `Application/Schema.sql`. Não execute as
-migrações antigas indiscriminadamente: o histórico contém operações de remoção
-de dados e incompatibilidades descritas na seção de banco deste README.
-Não importe o schema sobre um banco que já tenha dados.
+O seed cria ou valida 1 curso, 5 disciplinas, 5 professores com contas, 5 vínculos,
+10 estudantes com os nomes/e-mails publicados, 50 matrículas e 120 avaliações.
+Relacionamentos usam chaves acadêmicas, sem depender de UUIDs de outra máquina.
+Trinta avaliações ficam reservadas para lançamento manual. Repetições preservam
+registros e senhas existentes; conflitos causam rollback. O banco `app`, conexões
+TCP e Production são recusados para essa carga.
 
-### 7. Criar o primeiro usuário para entrar
+**Banco novo e banco legado são caminhos distintos.** Não execute o histórico
+inteiro de migrations sobre o schema atual, nem importe schema sobre banco com
+dados. Migrações legadas exigem inventário e procedimento próprios. O seed não
+exclui registros para contornar as proteções de migração.
 
-O projeto exige login, mas `Application/Fixtures.sql` está vazio e ainda não
-existe cadastro público de contas. Para criar uma conta local de administrador:
-
-1. Com o projeto rodando, abra **outro terminal** na pasta do projeto e execute:
-
-   ```bash
-   direnv exec . ghci
-   ```
-
-2. No prompt do Haskell, execute, substituindo o texto por uma senha local:
-
-   ```haskell
-   :set -XOverloadedStrings
-   import IHP.AuthSupport.Authentication (hashPassword)
-   hashPassword "SUBSTITUA_POR_SUA_SENHA_LOCAL"
-   ```
-
-3. Copie o hash retornado, **sem as aspas externas**, e saia:
-
-   ```haskell
-   :quit
-   ```
-
-4. Abra [http://localhost:8001](http://localhost:8001), procure o **Data Browser**
-   e crie um registro na tabela `users`:
-
-   | Campo | Valor |
-   |:---|:---|
-   | `id` | Use o UUID gerado automaticamente |
-   | `name` | Seu nome |
-   | `email` | O e-mail escolhido para login |
-   | `password_hash` | O hash gerado no terminal |
-   | `role` | `RoleAdmin` |
-   | `failed_login_attempts` | `0` |
-   | `locked_at` | Deixe nulo (`NULL`) |
-
-5. Salve e acesse [http://localhost:8000/Login](http://localhost:8000/Login)
-   usando o e-mail e a **senha original**, não o hash.
-
-Use uma senha exclusiva para desenvolvimento, pois esse procedimento a digita
-no console. Não coloque a senha original no campo `password_hash` nem salve
-credenciais no repositório.
-
-### 8. Rodar nas próximas vezes
-
-```bash
-cd sga-func
-direnv exec . bash ./start
-```
-
-Para encerrar, pressione **Ctrl+C** no terminal que está executando o projeto.
-
-### Problemas comuns
-
-| Problema | Como resolver |
-|:---|:---|
-| `nix: command not found` | Reabra o terminal após instalar o Nix. |
-| Ambiente bloqueado pelo direnv | Execute `direnv allow` dentro da pasta. |
-| `devenv: command not found` | Aguarde o ambiente carregar e use `direnv exec . bash ./start`. Se houve erro no carregamento, resolva o erro antes de iniciar. |
-| `./start: Permission denied` | Use `bash ./start`, como no roteiro. |
-| Porta 8000 ou 8001 ocupada | Encerre a outra instância ou programa que está usando a porta. |
-| Login não funciona no banco novo | Crie a conta do passo 7; não há credenciais padrão. |
+Para encerrar os serviços, use Ctrl+C. Se houver problema com Nix/direnv, confira
+as versões instaladas, `direnv allow` e o carregamento do ambiente. O projeto
+aceita caminhos com espaços/acentos; os scripts de banco usam o socket local
+resolvido, sem caminhos específicos de um integrante.
 
 ---
 
 ## Interface do Portal Acadêmico
 
-O SGA utiliza as views HSX e o Bootstrap existentes, com identidade azul-escuro,
-branco e cinza-claro, menu lateral responsivo, ícones SVG locais e logout por POST.
+O SGA utiliza as views HSX e o Bootstrap existentes, com identidade roxa,
+branco e fundos lilás, menu lateral responsivo, ícones SVG locais e logout por POST.
 O dashboard de Admin consulta no PostgreSQL os totais de estudantes, professores,
 cursos, disciplinas e matrículas. Não há indicadores fictícios.
 
@@ -220,8 +111,8 @@ por perfil e médias ausentes excluídas.
 A tela de Usuários oferece consulta exclusiva para Admin, sem senhas ou hashes.
 Admin também gerencia vínculos professor–disciplina em `/TeacherSubjects`,
 pelo menu **Vínculos docentes**. Conceder ou revogar uma disciplina controla o acesso docente às suas matrículas
-e notas. O [inventário anterior](docs/database/vinculos-docentes-e-mapeamento-atual.md)
-é histórico; o estado atual está no relatório da reorganização.
+e notas. Inventários e relatórios da base particular não são requisitos para executar
+o projeto ou seus testes.
 
 Detalhes, arquivos e validações: [documentação da interface](docs/interface-portal.md).
 
@@ -259,8 +150,8 @@ runghc -XBlockArguments Test/Main.hs
 ```
 
 A suíte CRUD cobre os seis cadastros e usa exclusivamente seu banco isolado.
-Nenhuma migration adicional é necessária para esses CRUDs quando a etapa
-aditiva `1792451864` já estiver aplicada.
+Em banco novo, o schema atual contém todas as estruturas necessárias.
+Bancos antigos por curso exigem tratamento específico antes da conversão.
 
 ---
 
@@ -309,26 +200,21 @@ Exemplos para a apresentação:
 runghc -i. Examples/Grade.hs
 ```
 
-O banco novo criado a partir do schema e um banco atualizado por migrações são
-caminhos distintos. A migração `1792029677.sql`, preparada para restaurar as
-FKs e a unicidade em bancos legados, não foi aplicada ao banco local, pois
-essas constraints já existiam. As revisões aditivas `1792451864` e
-`1792459225` estão aplicadas. Não reaplique as migrações antigas sobre esse banco
-ou sobre um banco criado a partir do schema atual. O histórico antigo contém operações de remoção
-de dados e um default `'Active'` incompatível com o enum declarado.
+### Banco novo, migrações e testes de demonstração
 
-### Evolução para Portal Acadêmico
+O schema atual relaciona matrículas a disciplinas. O histórico de migrações é
+preservado para bancos legados; não deve ser reaplicado sobre um banco criado
+pelo schema atual. A revisão `1793548800` recusa matrículas legadas não tratadas.
+Não use filtros históricos de revisão de outra instalação como receita universal.
 
-A etapa aditiva da migration `1792451864.sql` acrescenta usuários,
-professores, disciplinas e validações de notas/pesos. Matrículas ainda
-referenciam cursos: a conversão para disciplinas aguarda mapeamento real.
+```bash
+python3 Test/run-seed-tests.py
+```
 
-**Banco local criado pelo schema:** a execução validada usa
-`MINIMUM_REVISION=1792029677` com o executor `migrate` do IHP 1.6 para
-ignorar o histórico antigo incompatível. Não execute `migrate` sem esse
-filtro nesse banco, nem importe `Schema.sql` sobre dados existentes.
-Em outros bancos, confira primeiro o estado e o histórico aplicado.
-Veja o [registro da migração](docs/database/portal-academico-plano.md).
+Esse executor testa o seed em cluster temporário e usa credenciais aleatórias
+em memória. Não executa a carga no banco da aplicação nem lê inventários privados.
+O procedimento de instalação nova e os três perfis estão no
+[guia de demonstração](docs/dados-demonstracao.md).
 
 ### Integração Contínua com GitHub Actions
 
