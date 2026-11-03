@@ -4,12 +4,18 @@ Usage, from the project root: python3 Test/run-crud-tests.py
 No external database URL is used. The temporary cluster is retained for inspection.
 """
 import os
+import argparse
 from pathlib import Path
 import re
 import shutil
 import subprocess
 import sys
 import tempfile
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--skip-migrations', action='store_true',
+                    help='Run integration, CRUD and auth tests without running any migration')
+args = parser.parse_args()
 
 root = Path(__file__).resolve().parent.parent
 os.chdir(root)
@@ -67,13 +73,15 @@ try:
     run([tool('createdb'), '-h', str(work), '-p', '55439', 'sga_crud_test'])
     for sql in [ihp_schema, root / 'Application/Schema.sql']:
         run([tool('psql'), '-X', env['DATABASE_URL'], '-v', 'ON_ERROR_STOP=1', '-f', str(sql)])
-    run([sys.executable, str(root / 'Test/check-migrations.py')])
+    if not args.skip_migrations:
+        run([sys.executable, str(root / 'Test/check-migrations.py')])
     flags = []
     for line in ihp_ghci.read_text().splitlines():
         if line.startswith(':set -X') or line.startswith(':set -W'):
             flags.extend(line[5:].split())
-    for suite in ['Test/Integration.hs', 'Test/CRUD.hs', 'Test/Auth.hs']:
+    for suite in ['Test/Integration.hs', 'Test/CRUD.hs', 'Test/Auth.hs', 'Test/TeacherSubjects.hs', 'Test/AcademicModel.hs','Test/Dashboard.hs']:
         run([tool('runghc'), '-ignore-dot-ghci', '-i.', '-ibuild', '-iConfig', *flags, suite])
+    run([sys.executable, str(root / 'Test/check-authorization-locks.py')])
 finally:
     if started:
         run([tool('pg_ctl'), '-D', str(data), '-m', 'fast', '-w', 'stop'])

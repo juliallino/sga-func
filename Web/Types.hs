@@ -8,8 +8,10 @@ data WebApplication = WebApplication deriving (Eq, Show)
 
 
 data StaticController
-    = WelcomeAction | MyProfileAction | StudentSubjectsAction | StudentAveragesAction
-    | TeacherStudentsAction | TeacherAssessmentsAction
+    = WelcomeAction | AcademicRankingsAction | StudentDashboardAction | MyProfileAction | StudentSubjectsAction | StudentAveragesAction
+    | TeacherStudentsAction | TeacherAssessmentsAction | TeacherGradeEntryAction | TeacherDashboardAction | TeacherProfileAction
+    | TeacherSubjectStudentsAction { subjectId :: !(Id Subject) }
+    | TeacherSubjectAssessmentsAction { subjectId :: !(Id Subject) }
     deriving (Eq, Show, Data)
 
 data StudentsController

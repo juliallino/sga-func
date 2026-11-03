@@ -56,3 +56,30 @@ iconPath "grades" = "M5 3h14v18H5z M8 8h8 M8 12h4 M8 16h8"
 iconPath "users" = "M8 7a4 4 0 1 0 8 0 4 4 0 0 0-8 0 M4 21v-2a8 8 0 0 1 16 0v2"
 iconPath "logout" = "M9 4H4v16h5 M13 8l4 4-4 4 M8 12h12"
 iconPath _ = "M12 3v18 M3 12h18"
+
+instance CanSelect Teacher where
+    type SelectValue Teacher = UUID
+    selectValue = unpackId . (.id)
+    selectLabel teacher = teacher.name <> " — " <> teacher.registrationNumber
+
+instance CanSelect Subject where
+    type SelectValue Subject = UUID
+    selectValue = unpackId . (.id)
+    selectLabel subject = subject.name <> " — " <> subject.code
+
+
+canWriteGrades :: (?request :: Request) => Bool
+canWriteGrades = maybe False (\user -> user.role_ `elem` [Roleadmin, Roleteacher]) (currentUserOrNothing @User)
+
+-- Consistent server-rendered empty states and form navigation.
+emptyState :: Text -> Text -> Text -> Html
+emptyState icon title description = [hsx|
+    <div class="empty-state" role="status">
+        {moduleIcon icon}<h2>{title}</h2><p>{description}</p>
+    </div>
+|]
+
+formActions :: SubmitButton -> Text -> Html
+formActions save cancelUrl = [hsx|
+    <div class="form-actions">{save}<a class="btn btn-outline-secondary" href={cancelUrl}>Cancelar</a></div>
+|]

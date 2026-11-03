@@ -8,3 +8,7 @@ import IHP.ControllerPrelude
 fetchOr404 recordId = do
     record <- fetchOneOrNothing recordId
     maybe (earlyReturn renderNotFound) pure record
+
+-- Adapter only: convert pure Either errors into IHP form field errors.
+validacaoEither :: (a -> Either Text b) -> a -> ValidatorResult
+validacaoEither validar valor = either Failure (const Success) (validar valor)

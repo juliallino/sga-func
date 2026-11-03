@@ -8,16 +8,17 @@ instance View IndexView where
         {breadcrumb}
 
         <h1>Cursos<a href={pathTo NewCourseAction} class="btn btn-primary ms-4">+ Novo curso</a></h1>
+        {when (null courses) (emptyState "courses" "Nenhum curso cadastrado" "Cadastre um curso para organizar disciplinas e matrículas.")}
         <div class="table-responsive">
             <table class="table">
                 <thead>
                     <tr>
-                        <th>Nome</th>
-                        <th>Código</th>
-                        <th>Carga horária</th>
-                        <th></th>
-                        <th></th>
-                        <th></th>
+                        <th scope="col">Nome</th>
+                        <th scope="col">Código</th>
+                        <th scope="col">Carga horária</th>
+                        <th scope="col"><span class="visually-hidden">Ações</span></th>
+                        <th scope="col"><span class="visually-hidden">Ações</span></th>
+                        <th scope="col"><span class="visually-hidden">Ações</span></th>
                     </tr>
                 </thead>
                 <tbody>{forEach courses renderCourse}</tbody>

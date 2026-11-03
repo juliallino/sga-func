@@ -1,22 +1,25 @@
 module Web.View.Static.Welcome where
 import Web.View.Prelude
 import Numeric (showFFloat)
+import Web.View.Dashboard.Report (AcademicReport, renderReport, renderRanking)
 
 data PortalOverview
-    = AdminOverview Int Int Int Int Int
+    = AdminOverview Int Int Int Int Int Int
     | StudentOverview Int Int
     | TeacherOverview Int
 
-data WelcomeView = WelcomeView { user :: User, overview :: PortalOverview }
+data WelcomeView = WelcomeView { user :: User, overview :: PortalOverview, academicReport :: AcademicReport }
 
 instance View WelcomeView where
     html WelcomeView { .. } = [hsx|
         <div class="page-heading"><div><p class="eyebrow">{roleLabel user.role_}</p><h1>Olá, {user.name}.</h1><p class="page-description">Bem-vindo ao seu Portal Acadêmico.</p></div><span class="semester-label">SGA · Vida acadêmica</span></div>
         {renderOverview overview}
+        {renderReport academicReport (pathTo WelcomeAction)}
+        {renderRanking academicReport}
     |]
 
 renderOverview :: PortalOverview -> Html
-renderOverview (AdminOverview students teachers courses subjects enrollments) = [hsx|
+renderOverview (AdminOverview students teachers courses subjects enrollments assessments) = [hsx|
     <section class="dashboard-section" aria-labelledby="overview-title">
         <div class="section-heading"><h2 id="overview-title">Visão geral</h2><span>Cadastros acadêmicos</span></div>
         <div class="metrics-grid">
@@ -25,6 +28,7 @@ renderOverview (AdminOverview students teachers courses subjects enrollments) = 
             {metric "courses" "Cursos" courses (pathTo CoursesAction)}
             {metric "subjects" "Disciplinas" subjects (pathTo SubjectsAction)}
             {metric "enrollments" "Matrículas" enrollments (pathTo EnrollmentsAction)}
+            {metric "grades" "Avaliações" assessments (pathTo GradesAction)}
         </div>
     </section>
     <div class="section-heading"><h2>Acesso rápido</h2><span>Organize a rotina acadêmica</span></div>
@@ -32,6 +36,11 @@ renderOverview (AdminOverview students teachers courses subjects enrollments) = 
         {quick "students" "Cadastrar estudante" "Comece pelo cadastro acadêmico do estudante." (pathTo NewStudentAction)}
         {quick "enrollments" "Nova matrícula" "Gerencie os vínculos dos estudantes." (pathTo NewEnrollmentAction)}
         {quick "grades" "Avaliações" "Registre notas e acompanhe os resultados." (pathTo GradesAction)}
+        {quick "teachers" "Professores" "Gerencie os cadastros e perfis docentes." (pathTo TeachersAction)}
+        {quick "courses" "Cursos" "Organize a oferta de cursos." (pathTo CoursesAction)}
+        {quick "subjects" "Disciplinas" "Gerencie as disciplinas de cada curso." (pathTo SubjectsAction)}
+        {quick "subjects" "Vínculos docentes" "Atribua disciplinas aos professores." (pathTo TeacherSubjectsAction)}
+        {quick "users" "Contas de acesso" "Consulte as contas e os perfis cadastrados." (pathTo UsersAction)}
     </div>
 |]
 renderOverview (StudentOverview enrollments grades) = [hsx|
@@ -75,18 +84,18 @@ instance View NoticeView where
     |]
 
 data AverageSummary = AverageSummary
-    { enrollment :: Enrollment, courseName :: Text, average :: Maybe Double, assessmentCount :: Int }
+    { enrollment :: Enrollment, subjectName :: Text, average :: Maybe Double, assessmentCount :: Int }
 data AveragesView = AveragesView { summaries :: [AverageSummary] }
 instance View AveragesView where
     html AveragesView { .. } = [hsx|
         <p class="eyebrow">Resultados acadêmicos</p><h1>Minhas médias</h1>
-        <p class="page-description">Médias ponderadas das avaliações registradas nas suas matrículas.</p>
+        <p class="page-description">Médias ponderadas por matrícula em disciplina, calculadas com as notas e os pesos registrados.</p>
         {when (null summaries) emptyAverages}
-        <div class="table-responsive"><table class="table"><thead><tr><th>Curso da matrícula</th><th>Situação</th><th>Avaliações</th><th>Média ponderada</th><th></th></tr></thead><tbody>{forEach summaries renderAverage}</tbody></table></div>
+        <div class="table-responsive"><table class="table"><thead><tr><th scope="col">Disciplina</th><th scope="col">Situação</th><th scope="col">Avaliações</th><th scope="col">Média ponderada</th><th scope="col"><span class="visually-hidden">Ações</span></th></tr></thead><tbody>{forEach summaries renderAverage}</tbody></table></div>
     |]
 renderAverage :: AverageSummary -> Html
 renderAverage summary = [hsx|
-    <tr><td>{summary.courseName}</td><td><span class="status-badge">{enrollmentStatusLabel summary.enrollment.status}</span></td><td>{summary.assessmentCount}</td><td>{averageText summary}</td><td><a href={ShowEnrollmentAction summary.enrollment.id}>Ver avaliações</a></td></tr>
+    <tr><td>{summary.subjectName}</td><td><span class="status-badge">{enrollmentStatusLabel summary.enrollment.status}</span></td><td>{summary.assessmentCount}</td><td>{averageText summary}</td><td><a href={ShowEnrollmentAction summary.enrollment.id}>Ver avaliações</a></td></tr>
 |]
 averageText :: AverageSummary -> Text
 averageText summary = case summary.average of

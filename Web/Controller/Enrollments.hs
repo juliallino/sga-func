@@ -2,6 +2,7 @@ module Web.Controller.Enrollments where
 
 import Web.Controller.Prelude
 import qualified Application.Domain.Grade as GradeDomain
+import qualified Application.Domain.EnrollmentCPS as EnrollmentCPS
 import Web.View.Enrollments.Index
 import Web.View.Enrollments.New
 import Web.View.Enrollments.Edit
@@ -12,14 +13,14 @@ instance Controller EnrollmentsController where
         requireLogin
         enrollments <- visibleEnrollments
         students <- query @Student |> filterWhereIn (#id, map (Id . (.studentId)) enrollments) |> fetch
-        courses <- query @Course |> filterWhereIn (#id, map (Id . (.courseId)) enrollments) |> fetch
+        subjects <- query @Subject |> filterWhereIn (#id, map (Id . (.subjectId)) enrollments) |> fetch
         render IndexView { .. }
 
     action NewEnrollmentAction = do
         requireAdmin
         let enrollment = newRecord
         students <- query @Student |> fetch
-        courses <- query @Course |> fetch
+        subjects <- query @Subject |> fetch
         render NewView { .. }
 
     action ShowEnrollmentAction { enrollmentId } = do
@@ -27,7 +28,7 @@ instance Controller EnrollmentsController where
         enrollment <- fetchOr404 enrollmentId
         requireEnrollment enrollment
         student <- fetchOr404 (Id enrollment.studentId :: Id Student)
-        course <- fetchOr404 (Id enrollment.courseId :: Id Course)
+        subject <- fetchOr404 (Id enrollment.subjectId :: Id Subject)
         grades <- query @Grade
             |> filterWhere (#enrollmentId, unpackId enrollmentId)
             |> fetch
@@ -38,14 +39,14 @@ instance Controller EnrollmentsController where
         requireAdmin
         enrollment <- fetchOr404 enrollmentId
         students <- query @Student |> fetch
-        courses <- query @Course |> fetch
+        subjects <- query @Subject |> fetch
         render EditView { .. }
 
     action UpdateEnrollmentAction { enrollmentId } = do
         requireAdmin
         enrollment <- fetchOr404 enrollmentId
         students <- query @Student |> fetch
-        courses <- query @Course |> fetch
+        subjects <- query @Subject |> fetch
         enrollment <- validarEnrollment (buildEnrollment enrollment)
         enrollment |> ifValid \case
             Left enrollment -> render EditView { .. }
@@ -58,7 +59,7 @@ instance Controller EnrollmentsController where
         requireAdmin
         let enrollment = newRecord @Enrollment
         students <- query @Student |> fetch
-        courses <- query @Course |> fetch
+        subjects <- query @Subject |> fetch
         enrollment <- validarEnrollment (buildEnrollment enrollment)
         enrollment |> ifValid \case
             Left enrollment -> render NewView { .. }
@@ -83,7 +84,7 @@ instance Controller EnrollmentsController where
 buildEnrollment enrollment = enrollment
     -- Leave the date untouched: PostgreSQL uses CURRENT_DATE on creation,
     -- and updates preserve the stored creation date, ignoring request parameters.
-    |> fill @'["studentId", "courseId", "status"]
+    |> fill @'["studentId", "subjectId", "status"]
 
 -- Only query references after UUID and enum parsing has succeeded.
 validarEnrollment :: (?modelContext :: ModelContext) => Enrollment -> IO Enrollment
@@ -93,19 +94,21 @@ validarEnrollment enrollment
         student <- query @Student
             |> filterWhere (#id, Id enrollment.studentId)
             |> fetchOneOrNothing
-        course <- query @Course
-            |> filterWhere (#id, Id enrollment.courseId)
+        subject <- query @Subject
+            |> filterWhere (#id, Id enrollment.subjectId)
             |> fetchOneOrNothing
         duplicada <- matriculaDuplicada enrollment
-        let comEstudante = if isNothing student
-                then attachFailure #studentId "O estudante informado não existe." enrollment
-                else enrollment
-        let comCurso = if isNothing course
-                then attachFailure #courseId "O curso informado não existe." comEstudante
-                else comEstudante
-        pure (if duplicada
-            then attachFailure #courseId "Este aluno já está matriculado neste curso." comCurso
-            else comCurso)
+        -- IO supplies facts; the CPS stage chooses a continuation purely.
+        -- Parsing/defaults remain with IHP, preserving create/update behavior.
+        EnrollmentCPS.validarRegrasMatriculaCPS
+            (EnrollmentCPS.VerificacaoMatricula (isJust student) (isJust subject) duplicada)
+            (\() -> pure enrollment)
+            (\erros -> pure (foldl anexarErro enrollment erros))
+    where
+        anexarErro registro erro = case erro of
+            EnrollmentCPS.EstudanteInexistente -> attachFailure #studentId (EnrollmentCPS.mensagemErroRegra erro) registro
+            EnrollmentCPS.DisciplinaInexistente -> attachFailure #subjectId (EnrollmentCPS.mensagemErroRegra erro) registro
+            EnrollmentCPS.MatriculaDuplicada -> attachFailure #subjectId (EnrollmentCPS.mensagemErroRegra erro) registro
 
 calcularMediaEnrollment :: [Grade] -> Maybe Double
 calcularMediaEnrollment grades =
@@ -116,7 +119,7 @@ matriculaDuplicada :: (?modelContext :: ModelContext) => Enrollment -> IO Bool
 matriculaDuplicada enrollment = do
     matriculas <- query @Enrollment
         |> filterWhere (#studentId, enrollment.studentId)
-        |> filterWhere (#courseId, enrollment.courseId)
+        |> filterWhere (#subjectId, enrollment.subjectId)
         |> fetch
 
     pure (any (\matricula -> matricula.id /= enrollment.id) matriculas)

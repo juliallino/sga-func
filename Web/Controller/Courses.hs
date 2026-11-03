@@ -70,16 +70,11 @@ instance Controller CoursesController where
     action DeleteCourseAction { courseId } = do
         requireAdmin
         course <- fetchOr404 courseId
-        dependencias <- query @Enrollment
-            |> filterWhere (#courseId, unpackId courseId)
-            |> fetchOneOrNothing
         disciplinas <- query @Subject
             |> filterWhere (#courseId, unpackId courseId)
             |> fetchOneOrNothing
         if isJust disciplinas
             then setErrorMessage "Não é possível excluir um curso com disciplinas."
-            else if isJust dependencias
-            then setErrorMessage "Não é possível excluir um curso com matrículas."
             else do
                 deleteRecord course
                 setSuccessMessage "Curso excluído com sucesso."

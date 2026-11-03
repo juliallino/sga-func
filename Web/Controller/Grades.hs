@@ -1,26 +1,33 @@
 module Web.Controller.Grades where
 
 import Web.Controller.Prelude
-import qualified Application.Domain.Grade as GradeDomain
+import qualified Application.Domain.Validation as AcademicValidation
 import Web.View.Grades.Form (EnrollmentOption, buildEnrollmentOptions)
 import Web.View.Grades.Index
 import Web.View.Grades.New
 import Web.View.Grades.Edit
 import Web.View.Grades.Show
+import IHP.LoginSupport.Helper.Controller (currentUser)
+import qualified Web.View.StudentPortal.Academic as StudentAcademic
 
 instance Controller GradesController where
     action GradesAction = do
         requireLogin
-        grades <- visibleGrades
-        enrollments <- visibleEnrollments
+        permitted <- visibleEnrollments
+        let selected = paramOrNothing @UUID "subjectId"
+        forEach selected (\subjectId -> requireSubject (Id subjectId))
+        let enrollments = maybe permitted (\subjectId -> filter (\e -> e.subjectId == subjectId) permitted) selected
+        grades <- query @Grade |> filterWhereIn (#enrollmentId, map (unpackId . (.id)) enrollments) |> fetch
         students <- query @Student |> filterWhereIn (#id, map (Id . (.studentId)) enrollments) |> fetch
-        courses <- query @Course |> filterWhereIn (#id, map (Id . (.courseId)) enrollments) |> fetch
-        let enrollmentOptions = buildEnrollmentOptions enrollments students courses
-        render IndexView { .. }
+        subjects <- query @Subject |> filterWhereIn (#id, map (Id . (.subjectId)) enrollments) |> fetch
+        let enrollmentOptions = buildEnrollmentOptions enrollments students subjects
+        if (currentUser @User).role_ == Rolestudent
+            then render StudentAcademic.NotesView { .. }
+            else render IndexView { .. }
 
     action NewGradeAction = do
-        requireAdmin
-        let grade = newRecord
+        requireGradeWriter
+        let grade = newRecord @Grade
         enrollmentOptions <- loadEnrollmentOptions
         render NewView { .. }
 
@@ -28,51 +35,51 @@ instance Controller GradesController where
         requireLogin
         grade <- fetchOr404 gradeId
         requireGrade grade
+        enrollment <- fetchOr404 (Id grade.enrollmentId :: Id Enrollment)
+        student <- fetchOr404 (Id enrollment.studentId :: Id Student)
+        subject <- fetchOr404 (Id enrollment.subjectId :: Id Subject)
+        course <- fetchOr404 (Id subject.courseId :: Id Course)
         render ShowView { .. }
 
     action EditGradeAction { gradeId } = do
-        requireAdmin
+        requireGradeWriter
         grade <- fetchOr404 gradeId
+        requireGrade grade
         enrollmentOptions <- loadEnrollmentOptions
         render EditView { .. }
 
-    action UpdateGradeAction { gradeId } = do
-        requireAdmin
-        grade <- fetchOr404 gradeId
+    action UpdateGradeAction { gradeId } = withTransaction do
+        requireGradeWriter
+        _ <- unsafeSqlQuery "SELECT id FROM grades WHERE id = ? FOR UPDATE" (Only (unpackId gradeId)) :: IO [Only UUID]
+        original <- fetchOr404 gradeId
+        requireEnrollmentWrite original.enrollmentId
         enrollmentOptions <- loadEnrollmentOptions
-        grade
-            |> buildGrade
-            |> ifValid \case
-                Left grade -> render EditView { .. }
-                Right grade -> do
-                    matriculaValida <- validarMatricula grade
-                    if not matriculaValida
-                        then do
-                            setErrorMessage "A matrícula informada não existe."
-                            render EditView { .. }
-                        else do
-                            grade <- grade |> updateRecord
-                            setSuccessMessage "Nota atualizada com sucesso."
-                            redirectTo EditGradeAction { .. }
+        let grade = buildGrade original
+        grade |> ifValid \case
+            Left grade -> render EditView { .. }
+            Right grade -> do
+                when ((currentUser @User).role_ == Roleteacher && grade.enrollmentId /= original.enrollmentId) forbidden
+                requireEnrollmentWrite grade.enrollmentId
+                _ <- updateRecord grade
+                setSuccessMessage "Nota atualizada com sucesso."
+                redirectTo EditGradeAction { .. }
 
-    action CreateGradeAction = do
-        requireAdmin
-        let grade = newRecord @Grade
+    action CreateGradeAction = withTransaction do
+        requireGradeWriter
         enrollmentOptions <- loadEnrollmentOptions
-        grade
-            |> buildGrade
-            |> ifValid \case
-                Left grade -> render NewView { .. }
-                Right grade -> do
-                    matriculaValida <- validarMatricula grade
-                    if not matriculaValida
-                        then do
-                            setErrorMessage "A matrícula informada não existe."
-                            render NewView { .. }
-                        else do
-                            grade <- grade |> createRecord
-                            setSuccessMessage "Nota cadastrada com sucesso."
-                            redirectTo GradesAction
+        let grade = buildGrade (newRecord @Grade)
+        grade |> ifValid \case
+            Left grade -> render NewView { .. }
+            Right grade -> do
+                exists <- validarMatricula grade
+                if not exists then do
+                    setErrorMessage "A matrícula informada não existe."
+                    render NewView { .. }
+                else do
+                    requireEnrollmentWrite grade.enrollmentId
+                    _ <- createRecord grade
+                    setSuccessMessage "Nota cadastrada com sucesso."
+                    redirectTo GradesAction
 
     action DeleteGradeAction { gradeId } = do
         requireAdmin
@@ -84,8 +91,8 @@ instance Controller GradesController where
 buildGrade grade = grade
     |> fill @'["enrollmentId", "assessmentName", "score", "weight"]
     |> validateField #assessmentName (withCustomErrorMessage "Informe o nome da avaliação." nonEmpty)
-    |> validateField #score (withCustomErrorMessage "A nota deve estar entre 0 e 10." (isTrue . GradeDomain.notaValida . realToFrac))
-    |> validateField #weight (withCustomErrorMessage "O peso deve ser maior que zero." (isTrue . GradeDomain.pesoValido . realToFrac))
+    |> validateField #score (validacaoEither (AcademicValidation.validarNota . realToFrac))
+    |> validateField #weight (validacaoEither (AcademicValidation.validarPeso . realToFrac))
     |> validateField #weight validarPrecisaoPeso
 
 validarMatricula :: (?modelContext :: ModelContext) => Grade -> IO Bool
@@ -97,12 +104,12 @@ validarMatricula grade = do
     pure (isJust resultado)
 
 
-loadEnrollmentOptions :: (?modelContext :: ModelContext) => IO [EnrollmentOption]
+loadEnrollmentOptions :: (?request :: Request, ?respond :: Respond, ?modelContext :: ModelContext) => IO [EnrollmentOption]
 loadEnrollmentOptions = do
-    enrollments <- query @Enrollment |> fetch
-    students <- query @Student |> fetch
-    courses <- query @Course |> fetch
-    pure (buildEnrollmentOptions enrollments students courses)
+    enrollments <- visibleEnrollments
+    students <- query @Student |> filterWhereIn (#id, map (Id . (.studentId)) enrollments) |> fetch
+    subjects <- query @Subject |> filterWhereIn (#id, map (Id . (.subjectId)) enrollments) |> fetch
+    pure (buildEnrollmentOptions enrollments students subjects)
 
 -- NUMERIC(5,2) rounds before checking constraints. A positive input such as
 -- 0.001 becomes zero; 1000 overflows. Match PostgreSQL's positive rounding

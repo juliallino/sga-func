@@ -20,9 +20,9 @@ O projeto contempla funcionalidades de gestão acadêmica, incluindo:
 
 Login, logout e controle de acesso por perfis estão implementados. As rotas
 acadêmicas exigem autenticação e verificações no servidor. O dashboard usa
-contagens reais do PostgreSQL. A migração de matrículas de curso para disciplina,
-a gestão de contas além da consulta e a gestão visual de autorizações de
-professores ainda estão pendentes; veja a [revisão final](REVISAO_FINAL.md).
+contagens reais do PostgreSQL. Matrículas relacionam estudantes a disciplinas;
+Admin gerencia os vínculos docentes e professores lançam e editam notas somente
+nas disciplinas autorizadas. Veja o [relatório da reorganização executada](docs/database/reorganizacao-executada-2026-11-02.md).
 
 ---
 
@@ -213,10 +213,15 @@ O dashboard de Admin consulta no PostgreSQL os totais de estudantes, professores
 cursos, disciplinas e matrículas. Não há indicadores fictícios.
 
 Estudantes têm menu próprio, perfil, matrículas, notas e médias ponderadas.
-Professores visualizam somente disciplinas autorizadas. Os portais explicam a
-indisponibilidade de consultas e lançamentos que dependem da conversão das
-matrículas antigas de curso para disciplina; nenhum vínculo é presumido pelo curso.
+Professores visualizam somente disciplinas autorizadas, seus estudantes e suas
+avaliações. A autorização é conferida nos controllers e nas consultas; nenhum
+vínculo é presumido pelo curso. Rankings estão em `/Rankings`, com isolamento
+por perfil e médias ausentes excluídas.
 A tela de Usuários oferece consulta exclusiva para Admin, sem senhas ou hashes.
+Admin também gerencia vínculos professor–disciplina em `/TeacherSubjects`,
+pelo menu **Vínculos docentes**. Conceder ou revogar uma disciplina controla o acesso docente às suas matrículas
+e notas. O [inventário anterior](docs/database/vinculos-docentes-e-mapeamento-atual.md)
+é histórico; o estado atual está no relatório da reorganização.
 
 Detalhes, arquivos e validações: [documentação da interface](docs/interface-portal.md).
 
@@ -243,8 +248,8 @@ código repetido e carga horária zero: o formulário deve explicar o erro.
 Tente excluir um curso com disciplina: a operação deve ser bloqueada.
 Excluir uma disciplina preserva seu curso; excluir um professor preserva sua
 conta de usuário, quando houver. Autorizações em `teacher_subjects` precisam
-ser revogadas antes de excluir professor ou disciplina. Matrículas ainda
-referenciam cursos; essa conversão depende de mapeamento real.
+ser revogadas antes de excluir professor ou disciplina. Matrículas referenciam disciplinas. A exclusão de uma disciplina com matrículas
+é bloqueada para preservar o histórico.
 
 Com o ambiente IHP carregado, execute os testes em PostgreSQL temporário:
 

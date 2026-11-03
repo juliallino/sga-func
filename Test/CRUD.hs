@@ -51,7 +51,7 @@ main = do
                 response <- callAction NewEnrollmentAction
                 responseStatusShouldBe response HTTP.status200
                 responseBodyShouldContain response "Nenhum estudante cadastrado"
-                responseBodyShouldContain response "Nenhum curso cadastrado"
+                responseBodyShouldContain response "Nenhuma disciplina cadastrada"
                 gradeResponse <- callAction NewGradeAction
                 responseBodyShouldContain gradeResponse "Nenhuma matrícula cadastrada"
             it "cria um estudante" $ withUser admin do
@@ -203,33 +203,35 @@ main = do
                 fetchOneOrNothing subject.id >>= (`shouldSatisfy` isNothing)
                 fetchOneOrNothing course.id >>= (`shouldSatisfy` isJust)
         describe "CRUD de matrículas" do
-            it "inclui alunos e cursos cadastrados nas opções de nova matrícula" $ withUser admin do
+            it "inclui alunos e disciplinas cadastrados nas opções de nova matrícula" $ withUser admin do
                 student <- query @Student |> fetchOne
-                course <- query @Course |> fetchOne
+                parent <- query @Course |> fetchOne
+                subject <- newRecord @Subject |> set #name "Disciplina de teste" |> set #code "ENROLL-S" |> set #workload 60 |> set #courseId (unpackId parent.id) |> createRecord
                 response <- callAction NewEnrollmentAction
                 responseStatusShouldBe response HTTP.status200
                 responseBodyShouldContain response ("value=\"" <> show student.id <> "\"")
-                responseBodyShouldContain response ("value=\"" <> show course.id <> "\"")
+                responseBodyShouldContain response ("value=\"" <> show subject.id <> "\"")
                 responseBodyShouldContain response "Aluno de teste"
-                responseBodyShouldContain response "Curso de teste"
+                responseBodyShouldContain response "Disciplina de teste"
             it "cria uma matrícula sem data e usa o dia atual do PostgreSQL" $ withUser admin do
                 student <- query @Student |> fetchOne
-                course <- query @Course |> fetchOne
-                response <- callActionWithParams CreateEnrollmentAction (enrollmentParams student course)
+                subject <- query @Subject |> fetchOne
+                response <- callActionWithParams CreateEnrollmentAction (enrollmentParams student subject)
                 responseStatusShouldBe response HTTP.status302
                 enrollment <- query @Enrollment |> fetchOne
                 [Only today] <- sqlQuery "SELECT CURRENT_DATE" ()
                 enrollment.enrollmentDate `shouldBe` today
             it "ignora data enviada na criação" $ withUser admin do
                 student <- query @Student |> fetchOne
-                course <- newRecord @Course |> set #name "Curso data automática" |> set #code "AUTO-DATE" |> set #workload 60 |> createRecord
-                response <- callActionWithParams CreateEnrollmentAction (("enrollmentDate", "2000-01-01") : enrollmentParams student course)
+                parent <- query @Course |> fetchOne
+                subject <- newRecord @Subject |> set #courseId (unpackId parent.id) |> set #name "Disciplina data automática" |> set #code "AUTO-DATE" |> set #workload 60 |> createRecord
+                response <- callActionWithParams CreateEnrollmentAction (("enrollmentDate", "2000-01-01") : enrollmentParams student subject)
                 responseStatusShouldBe response HTTP.status302
-                enrollment <- query @Enrollment |> filterWhere (#courseId, unpackId course.id) |> fetchOne
+                enrollment <- query @Enrollment |> filterWhere (#subjectId, unpackId subject.id) |> fetchOne
                 [Only today] <- sqlQuery "SELECT CURRENT_DATE" ()
                 enrollment.enrollmentDate `shouldBe` today
                 _ <- callAction (DeleteEnrollmentAction enrollment.id)
-                _ <- callAction (DeleteCourseAction course.id)
+                _ <- callAction (DeleteSubjectAction subject.id)
                 pure ()
             it "não oferece campo editável de data nos formulários" $ withUser admin do
                 enrollment <- query @Enrollment |> fetchOne
@@ -246,7 +248,7 @@ main = do
                     responseStatusShouldBe response HTTP.status200
                 response <- callAction (EditEnrollmentAction enrollment.id)
                 responseBodyShouldContain response "Aluno de teste"
-                responseBodyShouldContain response "Curso de teste"
+                responseBodyShouldContain response "Disciplina de teste"
                 responseBodyShouldContain response "selected"
             it "explica quando a matrícula não possui avaliações" $ withUser admin do
                 enrollment <- query @Enrollment |> fetchOne
@@ -256,18 +258,18 @@ main = do
                 responseBodyShouldNotContain response "Não foi possível calcular"
             it "impede duplicidade e preserva seletores após erro" $ withUser admin do
                 student <- query @Student |> fetchOne
-                course <- query @Course |> fetchOne
-                response <- callActionWithParams CreateEnrollmentAction (enrollmentParams student course)
+                subject <- query @Subject |> fetchOne
+                response <- callActionWithParams CreateEnrollmentAction (enrollmentParams student subject)
                 responseStatusShouldBe response HTTP.status200
                 responseBodyShouldContain response "já está matriculado"
                 responseBodyShouldContain response "selected"
                 enrollments <- query @Enrollment |> fetch
                 length enrollments `shouldBe` 1
-            it "rejeita estudante/curso inexistentes e status inválido" $ withUser admin do
+            it "rejeita estudante/disciplina inexistentes e status inválido" $ withUser admin do
                 student <- query @Student |> fetchOne
-                course <- query @Course |> fetchOne
-                let valid = enrollmentParams student course
-                forEach [("studentId", "00000000-0000-0000-0000-000000000001"), ("courseId", "00000000-0000-0000-0000-000000000001"), ("status", "pending")] \(field, value) -> do
+                subject <- query @Subject |> fetchOne
+                let valid = enrollmentParams student subject
+                forEach [("studentId", "00000000-0000-0000-0000-000000000001"), ("subjectId", "00000000-0000-0000-0000-000000000001"), ("status", "pending")] \(field, value) -> do
                     response <- callActionWithParams CreateEnrollmentAction ((field, value) : filter ((/= field) . fst) valid)
                     responseStatusShouldBe response HTTP.status200
                 enrollments <- query @Enrollment |> fetch
@@ -275,29 +277,29 @@ main = do
             it "edita a própria matrícula sem acusar duplicidade" $ withUser admin do
                 enrollment <- query @Enrollment |> fetchOne
                 student <- query @Student |> fetchOne
-                course <- query @Course |> fetchOne
-                response <- callActionWithParams (UpdateEnrollmentAction enrollment.id) (enrollmentParams student course)
+                subject <- query @Subject |> fetchOne
+                response <- callActionWithParams (UpdateEnrollmentAction enrollment.id) (enrollmentParams student subject)
                 responseStatusShouldBe response HTTP.status302
             it "preserva a data original ao editar, mesmo com data adulterada ou inválida" $ withUser admin do
                 enrollment <- query @Enrollment |> fetchOne
                 student <- query @Student |> fetchOne
-                course <- query @Course |> fetchOne
+                subject <- query @Subject |> fetchOne
                 let originalDate = fromGregorian 2001 2 3
                 -- Simulate a historical enrollment in the isolated database.
                 _ <- enrollment |> set #enrollmentDate originalDate |> updateRecord
                 forEach ["2099-12-31", "data-invalida"] \date -> do
-                    response <- callActionWithParams (UpdateEnrollmentAction enrollment.id) (("enrollmentDate", date) : enrollmentParams student course)
+                    response <- callActionWithParams (UpdateEnrollmentAction enrollment.id) (("enrollmentDate", date) : enrollmentParams student subject)
                     responseStatusShouldBe response HTTP.status302
                     updated <- fetch enrollment.id
                     updated.enrollmentDate `shouldBe` originalDate
         describe "CRUD de notas e dependências" do
-            it "oferece a matrícula com aluno e curso no seletor de notas" $ withUser admin do
+            it "oferece a matrícula com aluno e disciplina no seletor de notas" $ withUser admin do
                 enrollment <- query @Enrollment |> fetchOne
                 response <- callAction NewGradeAction
                 responseStatusShouldBe response HTTP.status200
                 responseBodyShouldContain response ("value=\"" <> show enrollment.id <> "\"")
                 responseBodyShouldContain response "Aluno de teste"
-                responseBodyShouldContain response "Curso de teste"
+                responseBodyShouldContain response "Disciplina de teste"
                 responseBodyShouldContain response "Selecione uma matrícula"
             it "cria duas avaliações com notas decimais" $ withUser admin do
                 enrollment <- query @Enrollment |> fetchOne
@@ -313,7 +315,7 @@ main = do
                 responseBodyShouldContain response "step=\"0.01\""
                 editResponse <- callAction (EditGradeAction grade.id)
                 responseBodyShouldContain editResponse "Aluno de teste"
-                responseBodyShouldContain editResponse "Curso de teste"
+                responseBodyShouldContain editResponse "Disciplina de teste"
                 responseBodyShouldContain editResponse "selected"
             it "exibe as avaliações da matrícula e a média ponderada" $ withUser admin do
                 enrollment <- query @Enrollment |> fetchOne
@@ -332,7 +334,7 @@ main = do
                     response <- callActionWithParams CreateGradeAction ((field, value) : filter ((/= field) . fst) valid)
                     responseStatusShouldBe response HTTP.status200
                     responseBodyShouldContain response "Aluno de teste"
-                    responseBodyShouldContain response "Curso de teste"
+                    responseBodyShouldContain response "Disciplina de teste"
                     when (field /= "enrollmentId") do
                         responseBodyShouldContain response "selected"
                 grades <- query @Grade |> fetch
@@ -376,29 +378,29 @@ main = do
                     unsafeSqlExecDiscardResult ("UPDATE grades SET weight = " <> weight) ()
                         `shouldThrow` anyException
             it "rejeita matrícula duplicada mesmo sem passar pelo controller" $ withUser admin do
-                unsafeSqlExecDiscardResult "INSERT INTO enrollments (student_id, course_id) SELECT student_id, course_id FROM enrollments LIMIT 1" ()
+                unsafeSqlExecDiscardResult "INSERT INTO enrollments (student_id, subject_id) SELECT student_id, subject_id FROM enrollments LIMIT 1" ()
                     `shouldThrow` anyException
             it "rejeita estudante inexistente" $ withUser admin do
-                unsafeSqlExecDiscardResult "INSERT INTO enrollments (student_id, course_id) SELECT '00000000-0000-0000-0000-000000000001'::uuid, id FROM courses LIMIT 1" ()
+                unsafeSqlExecDiscardResult "INSERT INTO enrollments (student_id, subject_id) SELECT '00000000-0000-0000-0000-000000000001'::uuid, id FROM subjects LIMIT 1" ()
                     `shouldThrow` anyException
-            it "rejeita curso inexistente" $ withUser admin do
-                unsafeSqlExecDiscardResult "INSERT INTO enrollments (student_id, course_id) SELECT id, '00000000-0000-0000-0000-000000000001'::uuid FROM students LIMIT 1" ()
+            it "rejeita disciplina inexistente" $ withUser admin do
+                unsafeSqlExecDiscardResult "INSERT INTO enrollments (student_id, subject_id) SELECT id, '00000000-0000-0000-0000-000000000001'::uuid FROM students LIMIT 1" ()
                     `shouldThrow` anyException
             it "rejeita nota com matrícula inexistente" $ withUser admin do
                 unsafeSqlExecDiscardResult "INSERT INTO grades (enrollment_id, assessment_name, score, weight) VALUES ('00000000-0000-0000-0000-000000000001', 'Orfa', 8, 1)" ()
                     `shouldThrow` anyException
         describe "Exclusões" do
-            it "preserva estudante, curso e matrícula com dependências" $ withUser admin do
+            it "preserva estudante, disciplina e matrícula com dependências" $ withUser admin do
                 student <- query @Student |> fetchOne
-                course <- query @Course |> fetchOne
+                subject <- query @Subject |> fetchOne
                 enrollment <- query @Enrollment |> fetchOne
                 _ <- callAction (DeleteStudentAction student.id)
-                _ <- callAction (DeleteCourseAction course.id)
+                _ <- callAction (DeleteSubjectAction subject.id)
                 _ <- callAction (DeleteEnrollmentAction enrollment.id)
                 fetchOneOrNothing student.id >>= (`shouldSatisfy` isJust)
-                fetchOneOrNothing course.id >>= (`shouldSatisfy` isJust)
+                fetchOneOrNothing subject.id >>= (`shouldSatisfy` isJust)
                 fetchOneOrNothing enrollment.id >>= (`shouldSatisfy` isJust)
-            it "exclui notas, depois matrícula, estudante e curso de teste" $ withUser admin do
+            it "exclui notas, depois matrícula, estudante e disciplina de teste" $ withUser admin do
                 grades <- query @Grade |> fetch
                 forEach grades \grade -> do
                     response <- callAction (DeleteGradeAction grade.id)
@@ -407,20 +409,20 @@ main = do
                 _ <- callAction (DeleteEnrollmentAction enrollment.id)
                 student <- query @Student |> fetchOne
                 _ <- callAction (DeleteStudentAction student.id)
-                course <- query @Course |> fetchOne
-                _ <- callAction (DeleteCourseAction course.id)
+                subject <- query @Subject |> fetchOne
+                _ <- callAction (DeleteSubjectAction subject.id)
                 query @Grade |> fetch >>= (\rows -> length rows `shouldBe` 0)
                 query @Enrollment |> fetch >>= (\rows -> length rows `shouldBe` 0)
                 query @Student |> fetch >>= (\rows -> length rows `shouldBe` 0)
-                query @Course |> fetch >>= (\rows -> length rows `shouldBe` 0)
+                query @Subject |> fetch >>= (\rows -> length rows `shouldBe` 0)
         ) context
 
 studentParams :: [(ByteString, ByteString)]
 studentParams = [("name", "Aluno de teste"), ("email", "crud@example.test"), ("enrollmentNumber", "CRUD-001")]
 courseParams :: [(ByteString, ByteString)]
 courseParams = [("name", "Curso de teste"), ("code", "CRUD"), ("workload", "60")]
-enrollmentParams :: Student -> Course -> [(ByteString, ByteString)]
-enrollmentParams student course = [("studentId", cs (show student.id)), ("courseId", cs (show course.id)), ("status", "active")]
+enrollmentParams :: Student -> Subject -> [(ByteString, ByteString)]
+enrollmentParams student subject = [("studentId", cs (show student.id)), ("subjectId", cs (show subject.id)), ("status", "active")]
 gradeParams :: Enrollment -> ByteString -> ByteString -> ByteString -> [(ByteString, ByteString)]
 gradeParams enrollment name score weight = [("enrollmentId", cs (show enrollment.id)), ("assessmentName", name), ("score", score), ("weight", weight)]
 

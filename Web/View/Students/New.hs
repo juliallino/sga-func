@@ -18,8 +18,8 @@ instance View NewView where
 renderForm :: Student -> Html
 renderForm student = formFor student [hsx|
     {(textField #name) { fieldLabel = "Nome" }}
-    {(textField #email) { fieldLabel = "E-mail" }}
+    {(emailField #email) { fieldLabel = "E-mail" }}
     {(textField #enrollmentNumber) { fieldLabel = "Número de matrícula" }}
-    {submitButton { label = "Salvar" }}
+    {formActions (submitButton { label = "Salvar" }) (pathTo StudentsAction)}
 
 |]

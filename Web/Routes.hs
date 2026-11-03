@@ -7,11 +7,18 @@ import Web.Types
 -- Additional [routes|...|] blocks get appended by `new-controller`.
 [routes|StaticController
 GET /    WelcomeAction
+GET /StudentDashboard StudentDashboardAction
+GET /Rankings AcademicRankingsAction
+GET /TeacherSubjectStudents?subjectId TeacherSubjectStudentsAction
+GET /TeacherSubjectAssessments?subjectId TeacherSubjectAssessmentsAction
 GET /MyProfile MyProfileAction
 GET /MySubjects StudentSubjectsAction
 GET /MyAverages StudentAveragesAction
+GET /TeacherDashboard TeacherDashboardAction
+GET /TeacherProfile TeacherProfileAction
 GET /TeacherStudents TeacherStudentsAction
 GET /TeacherAssessments TeacherAssessmentsAction
+GET /TeacherGradeEntry TeacherGradeEntryAction
 |]
 
 [routes|StudentsController

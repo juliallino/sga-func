@@ -1,6 +1,7 @@
 module Web.Controller.Students where
 
 import Web.Controller.Prelude
+import qualified Application.Domain.Validation as AcademicValidation
 import Web.View.Students.Index
 import Web.View.Students.New
 import Web.View.Students.Edit
@@ -94,7 +95,6 @@ instance Controller StudentsController where
 
 buildStudent student = student
     |> fill @'["name", "email", "enrollmentNumber"]
-    |> validateField #name (withCustomErrorMessage "Informe o nome." nonEmpty)
-    |> validateField #email (withCustomErrorMessage "Informe o e-mail." nonEmpty)
-    |> validateField #email (withCustomErrorMessage "Informe um e-mail válido." isEmail)
-    |> validateField #enrollmentNumber (withCustomErrorMessage "Informe o número de matrícula." nonEmpty)
+    |> validateField #name (validacaoEither AcademicValidation.validarNomeEstudante)
+    |> validateField #email (validacaoEither AcademicValidation.validarEmail)
+    |> validateField #enrollmentNumber (validacaoEither AcademicValidation.validarNumeroMatricula)

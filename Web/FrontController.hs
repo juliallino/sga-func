@@ -8,6 +8,7 @@ import Web.View.Layout (defaultLayout)
 import Web.Controller.Sessions ()
 import Web.Controller.Users ()
 import Web.Controller.Teachers ()
+import Web.Controller.TeacherSubjects ()
 import Web.Controller.Subjects ()
 import Web.Controller.Grades ()
 import Web.Controller.Enrollments ()
@@ -22,6 +23,7 @@ instance FrontController WebApplication where
         , parseRoute @StaticController
         , parseRoute @UsersController
         , parseRoute @SessionsController
+        , parseRoute @TeacherSubjectsController
         , parseRoute @TeachersController
         , parseRoute @SubjectsController
         , parseRoute @GradesController

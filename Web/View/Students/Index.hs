@@ -8,16 +8,17 @@ instance View IndexView where
         {breadcrumb}
 
         <h1>Estudantes{when isAdmin (newStudentLink)}</h1>
+        {when (null students) (emptyState "students" "Nenhum estudante cadastrado" "Cadastre o primeiro estudante para iniciar sua vida acadêmica.")}
         <div class="table-responsive">
             <table class="table">
                 <thead>
                     <tr>
-                        <th>Nome</th>
-                        <th>E-mail</th>
-                        <th>Número de matrícula</th>
-                        <th></th>
-                        <th></th>
-                        <th></th>
+                        <th scope="col">Nome</th>
+                        <th scope="col">E-mail</th>
+                        <th scope="col">Número de matrícula</th>
+                        <th scope="col"><span class="visually-hidden">Ações</span></th>
+                        <th scope="col"><span class="visually-hidden">Ações</span></th>
+                        <th scope="col"><span class="visually-hidden">Ações</span></th>
                     </tr>
                 </thead>
                 <tbody>{forEach students renderStudent}</tbody>

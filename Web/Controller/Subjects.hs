@@ -5,13 +5,18 @@ import Web.View.Subjects.Index
 import Web.View.Subjects.New
 import Web.View.Subjects.Edit
 import Web.View.Subjects.Show
+import qualified Web.View.TeacherPortal.Subjects as TeacherPortal
+import IHP.LoginSupport.Helper.Controller (currentUser)
 
 instance Controller SubjectsController where
     action SubjectsAction = do
         requireLogin
         subjects <- visibleSubjects
+        enrollments <- visibleEnrollments
         courses <- query @Course |> filterWhereIn (#id, map (Id . (.courseId)) subjects) |> fetch
-        render IndexView { .. }
+        if (currentUser @User).role_ == Roleteacher
+            then render TeacherPortal.IndexView { .. }
+            else render IndexView { .. }
 
     action NewSubjectAction = do
         requireAdmin
@@ -59,7 +64,10 @@ instance Controller SubjectsController where
         requireAdmin
         subject <- fetchOr404 subjectId
         permissions <- query @TeacherSubject |> filterWhere (#subjectId, unpackId subjectId) |> fetchOneOrNothing
-        if isJust permissions
+        enrollment <- query @Enrollment |> filterWhere (#subjectId, unpackId subjectId) |> fetchOneOrNothing
+        if isJust enrollment
+            then setErrorMessage "Não é possível excluir uma disciplina com matrículas."
+            else if isJust permissions
             then setErrorMessage "Revogue as autorizações antes de excluir disciplina."
             else do
                 deleteRecord subject
