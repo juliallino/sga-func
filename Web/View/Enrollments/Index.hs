@@ -1,27 +1,28 @@
 module Web.View.Enrollments.Index where
 import Web.View.Prelude
 
-data IndexView = IndexView { enrollments :: [Enrollment], students :: [Student], courses :: [Course] }
+data IndexView = IndexView { enrollments :: [Enrollment], students :: [Student], subjects :: [Subject] }
 
 instance View IndexView where
     html IndexView { .. } = [hsx|
         {breadcrumb}
 
         <h1>{if isStudent then "Minhas matrículas" else "Matrículas" :: Text}{when isAdmin (newEnrollmentLink)}</h1>
+        {when (null enrollments) (emptyState "enrollments" "Nenhuma matrícula encontrada" "As matrículas disponíveis para sua conta serão exibidas aqui.")}
         <div class="table-responsive">
             <table class="table">
                 <thead>
                     <tr>
-                        <th>Estudante</th>
-                        <th>Curso</th>
-                        <th>Data da matrícula</th>
-                        <th>Situação</th>
-                        <th></th>
-                        <th></th>
-                        <th></th>
+                        <th scope="col">Estudante</th>
+                        <th scope="col">Disciplina</th>
+                        <th scope="col">Data da matrícula</th>
+                        <th scope="col">Situação</th>
+                        <th scope="col"><span class="visually-hidden">Ações</span></th>
+                        <th scope="col"><span class="visually-hidden">Ações</span></th>
+                        <th scope="col"><span class="visually-hidden">Ações</span></th>
                     </tr>
                 </thead>
-                <tbody>{forEach enrollments (renderEnrollment students courses)}</tbody>
+                <tbody>{forEach enrollments (renderEnrollment students subjects)}</tbody>
             </table>
             
         </div>
@@ -31,11 +32,11 @@ instance View IndexView where
                 [ breadcrumbLink "Matrículas" EnrollmentsAction
                 ]
 
-renderEnrollment :: (?request :: Request) => [Student] -> [Course] -> Enrollment -> Html
-renderEnrollment students courses enrollment = [hsx|
+renderEnrollment :: (?request :: Request) => [Student] -> [Subject] -> Enrollment -> Html
+renderEnrollment students subjects enrollment = [hsx|
     <tr>
         <td>{maybe "Estudante indisponível" (.name) (find (\student -> unpackId student.id == enrollment.studentId) students)}</td>
-        <td>{maybe "Curso indisponível" (.name) (find (\course -> unpackId course.id == enrollment.courseId) courses)}</td>
+        <td>{maybe "Disciplina indisponível" (.name) (find (\subject -> unpackId subject.id == enrollment.subjectId) subjects)}</td>
         <td>{enrollment.enrollmentDate}</td>
         <td><span class="status-badge">{enrollmentStatusLabel enrollment.status}</span></td>
         <td><a href={ShowEnrollmentAction enrollment.id}>Visualizar</a></td>

@@ -12,19 +12,19 @@ instance CanSelect EnrollmentOption where
     selectValue = (.optionId)
     selectLabel = (.optionLabel)
 
-buildEnrollmentOptions :: [Enrollment] -> [Student] -> [Course] -> [EnrollmentOption]
-buildEnrollmentOptions enrollments students courses = map toOption enrollments
+buildEnrollmentOptions :: [Enrollment] -> [Student] -> [Subject] -> [EnrollmentOption]
+buildEnrollmentOptions enrollments students subjects = map toOption enrollments
     where
         toOption enrollment = EnrollmentOption
             { optionId = unpackId enrollment.id
-            , optionLabel = studentLabel enrollment <> " — " <> courseLabel enrollment
+            , optionLabel = studentLabel enrollment <> " — " <> subjectLabel enrollment
             }
         studentLabel enrollment = case find (\student -> unpackId student.id == enrollment.studentId) students of
             Just student -> student.name <> " (" <> student.enrollmentNumber <> ")"
             Nothing -> "Estudante indisponível"
-        courseLabel enrollment = case find (\course -> unpackId course.id == enrollment.courseId) courses of
-            Just course -> course.name <> " (" <> course.code <> ")"
-            Nothing -> "Curso indisponível"
+        subjectLabel enrollment = case find (\subject -> unpackId subject.id == enrollment.subjectId) subjects of
+            Just subject -> subject.name <> " (" <> subject.code <> ")"
+            Nothing -> "Disciplina indisponível"
 
 renderForm :: Grade -> [EnrollmentOption] -> Html
 renderForm grade enrollmentOptions = formFor grade [hsx|
@@ -34,7 +34,7 @@ renderForm grade enrollmentOptions = formFor grade [hsx|
     {(textField #assessmentName) { fieldLabel = "Nome da avaliação" }}
     {(numberField #score) { fieldLabel = "Nota", additionalAttributes = [("step", "0.01"), ("min", "0"), ("max", "10")] }}
     {(numberField #weight) { fieldLabel = "Peso", additionalAttributes = [("step", "0.01"), ("min", "0.01")] }}
-    {submitButton { label = "Salvar" }}
+    {formActions (submitButton { label = "Salvar" }) (pathTo GradesAction)}
 |]
 
 noEnrollments :: Html

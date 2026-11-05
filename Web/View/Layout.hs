@@ -19,12 +19,17 @@ defaultLayout inner = [hsx|
         {scripts}
         <title>{pageTitleOrDefault "SGA — Portal Acadêmico"}</title>
     </head>
-    <body>
+    <body class={portalTheme}>
         <a class="skip-link" href="#main-content">Pular para o conteúdo</a>
         {renderPortal inner}
     </body>
 </html>
 |]
+
+portalTheme :: (?request :: Request) => Text
+portalTheme = case currentUserOrNothing @User of
+    Just user | user.role_ == Roleteacher -> "teacher-theme"
+    _ -> ""
 
 renderPortal :: (?request :: Request) => Html -> Html
 renderPortal inner = case currentUserOrNothing @User of
@@ -61,32 +66,50 @@ roleMenu Roleadmin = [hsx|
     {navItem "dashboard" "Dashboard" (pathTo WelcomeAction)}
     {navItem "students" "Estudantes" (pathTo StudentsAction)}
     {navItem "teachers" "Professores" (pathTo TeachersAction)}
+    {navItem "subjects" "Vínculos docentes" (pathTo TeacherSubjectsAction)}
     {navItem "courses" "Cursos" (pathTo CoursesAction)}
     {navItem "subjects" "Disciplinas" (pathTo SubjectsAction)}
     {navItem "enrollments" "Matrículas" (pathTo EnrollmentsAction)}
     {navItem "grades" "Avaliações" (pathTo GradesAction)}
     {navItem "users" "Usuários" (pathTo UsersAction)}
+    {navItem "grades" "Rankings" (pathTo AcademicRankingsAction)}
 |]
 roleMenu Rolestudent = [hsx|
-    {navItem "dashboard" "Meu portal" (pathTo WelcomeAction)}
+    {navItem "dashboard" "Início" (pathTo StudentDashboardAction)}
+    {navItem "grades" "Minha classificação" (pathTo AcademicRankingsAction)}
     {navItem "users" "Meu perfil" (pathTo MyProfileAction)}
     {navItem "subjects" "Minhas disciplinas" (pathTo StudentSubjectsAction)}
-    {navItem "enrollments" "Minhas matrículas" (pathTo EnrollmentsAction)}
     {navItem "grades" "Minhas notas" (pathTo GradesAction)}
     {navItem "dashboard" "Minhas médias" (pathTo StudentAveragesAction)}
 |]
 roleMenu Roleteacher = [hsx|
-    {navItem "dashboard" "Meu portal" (pathTo WelcomeAction)}
+    {navItem "dashboard" "Início" (pathTo TeacherDashboardAction)}
+    {navItem "grades" "Rankings das disciplinas" (pathTo AcademicRankingsAction)}
     {navItem "subjects" "Minhas disciplinas" (pathTo SubjectsAction)}
-    {navItem "students" "Estudantes vinculados" (pathTo TeacherStudentsAction)}
-    {navItem "grades" "Lançar avaliações" (pathTo TeacherAssessmentsAction)}
+    {navItem "students" "Meus estudantes" (pathTo TeacherStudentsAction)}
+    {navItem "grades" "Lançar notas" (pathTo TeacherGradeEntryAction)}
+    {navItem "enrollments" "Avaliações" (pathTo TeacherAssessmentsAction)}
+    {navItem "users" "Meu perfil" (pathTo TeacherProfileAction)}
 |]
 
 navItem :: (?request :: Request) => Text -> Text -> Text -> Html
 navItem icon label url = [hsx|
     <a class={classes [("sidebar-link", True), ("is-active", active)]} href={url} aria-current={if active then "page" else "false" :: Text}>{moduleIcon icon}<span>{label}</span></a>
 |]
-    where active = cs (Wai.rawPathInfo ?request) == url
+    where
+        currentPath = cs (Wai.rawPathInfo ?request)
+        active = currentPath == url || any (matchesSection currentPath) sections
+        matchesSection current (destination, paths) = url == destination && current `elem` paths
+        sections :: [(Text, [Text])]
+        sections =
+            [ (pathTo StudentsAction, ["/NewStudent", "/CreateStudent", "/EditStudent", "/UpdateStudent", "/ShowStudent"])
+            , (pathTo TeachersAction, ["/NewTeacher", "/CreateTeacher", "/EditTeacher", "/UpdateTeacher", "/ShowTeacher"])
+            , (pathTo CoursesAction, ["/NewCourse", "/CreateCourse", "/EditCourse", "/UpdateCourse", "/ShowCourse"])
+            , (pathTo SubjectsAction, ["/NewSubject", "/CreateSubject", "/EditSubject", "/UpdateSubject", "/ShowSubject"])
+            , (pathTo EnrollmentsAction, ["/NewEnrollment", "/CreateEnrollment", "/EditEnrollment", "/UpdateEnrollment", "/ShowEnrollment"])
+            , (pathTo GradesAction, ["/NewGrade", "/CreateGrade", "/EditGrade", "/UpdateGrade", "/ShowGrade"])
+            , (pathTo TeacherStudentsAction, ["/TeacherSubjectStudents"])
+            ]
 
 -- The 'assetPath' function used below appends a `?v=SOME_VERSION` to the static assets in production
 -- This is useful to avoid users having old CSS and JS files in their browser cache once a new version is deployed

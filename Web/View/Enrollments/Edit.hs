@@ -5,14 +5,14 @@ import Web.View.Enrollments.Form (renderForm)
 data EditView = EditView
     { enrollment :: Enrollment
     , students :: [Student]
-    , courses :: [Course]
+    , subjects :: [Subject]
     }
 
 instance View EditView where
     html EditView { .. } = [hsx|
         {breadcrumb}
         <h1>Editar matrícula</h1>
-        {renderForm enrollment students courses}
+        {renderForm enrollment students subjects}
     |]
         where
             breadcrumb = renderBreadcrumb

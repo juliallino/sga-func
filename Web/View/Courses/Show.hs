@@ -13,9 +13,16 @@ instance View ShowView where
             <dt>Carga horária</dt><dd>{course.workload}</dd>
         </dl>
 
+        <div class="detail-actions">
+            <a class="btn btn-outline-primary" href={CoursesAction}>Voltar à listagem</a>
+            {when isAdmin (editLink course)}
+        </div>
     |]
         where
             breadcrumb = renderBreadcrumb
                             [ breadcrumbLink "Cursos" CoursesAction
                             , breadcrumbText "Detalhes do curso"
                             ]
+
+editLink :: Course -> Html
+editLink course = [hsx|<a class="btn btn-primary" href={EditCourseAction course.id}>Editar</a>|]

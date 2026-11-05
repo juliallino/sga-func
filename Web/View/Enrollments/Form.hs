@@ -8,20 +8,20 @@ instance CanSelect Student where
     selectLabel student = student.name <> " - Matrícula " <> student.enrollmentNumber
     selectValue student = unpackId student.id
 
-renderForm :: Enrollment -> [Student] -> [Course] -> Html
-renderForm enrollment students courses = formFor enrollment [hsx|
+renderForm :: Enrollment -> [Student] -> [Subject] -> Html
+renderForm enrollment students subjects = formFor enrollment [hsx|
     {(selectField #studentId students)
         { fieldLabel = "Estudante", placeholder = "Selecione um estudante", required = True }}
     {when (null students) noStudents}
-    {(selectField #courseId courses)
-        { fieldLabel = "Curso", placeholder = "Selecione um curso", required = True }}
-    {when (null courses) noCourses}
+    {(selectField #subjectId subjects)
+        { fieldLabel = "Disciplina", placeholder = "Selecione um disciplina", required = True }}
+    {when (null subjects) noSubjects}
     <div class="mb-3">
         <span class="form-label">Data da matrícula</span>
         <p class="form-text">{if isNew enrollment then "Definida automaticamente no cadastro." else show enrollment.enrollmentDate}</p>
     </div>
     {(selectField #status [Active, Suspended, Completed]) { fieldLabel = "Situação", fieldValue = inputValue enrollment.status, placeholder = "Selecione uma situação" }}
-    {submitButton { label = "Salvar" }}
+    {formActions (submitButton { label = "Salvar" }) (pathTo EnrollmentsAction)}
 |]
 
 noStudents :: Html
@@ -29,7 +29,7 @@ noStudents = [hsx|
     <p>Nenhum estudante cadastrado. <a href={NewStudentAction}>Cadastrar estudante</a></p>
 |]
 
-noCourses :: Html
-noCourses = [hsx|
-    <p>Nenhum curso cadastrado. <a href={NewCourseAction}>Cadastrar curso</a></p>
+noSubjects :: Html
+noSubjects = [hsx|
+    <p>Nenhuma disciplina cadastrada. <a href={NewSubjectAction}>Cadastrar disciplina</a></p>
 |]

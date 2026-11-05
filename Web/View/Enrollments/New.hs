@@ -6,14 +6,14 @@ import Web.View.Enrollments.Form (renderForm)
 data NewView = NewView
     { enrollment :: Enrollment
     , students :: [Student]
-    , courses :: [Course]
+    , subjects :: [Subject]
     }
 
 instance View NewView where
     html NewView { .. } = [hsx|
         {breadcrumb}
         <h1>Nova matrícula</h1>
-        {renderForm enrollment students courses}
+        {renderForm enrollment students subjects}
     |]
         where
             breadcrumb = renderBreadcrumb

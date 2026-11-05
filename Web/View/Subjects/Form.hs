@@ -8,7 +8,7 @@ renderForm subject courses = formFor subject [hsx|
     {(numberField #workload) { fieldLabel = "Carga horária", additionalAttributes = [("min", "1")] }}
     {(selectField #courseId courses) { fieldLabel = "Curso", placeholder = "Selecione um curso", required = True }}
     {when (null courses) noCourses}
-    {submitButton { label = "Salvar" }}
+    {formActions (submitButton { label = "Salvar" }) (pathTo SubjectsAction)}
 |]
 
 noCourses :: Html

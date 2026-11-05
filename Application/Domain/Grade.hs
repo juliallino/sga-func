@@ -44,7 +44,7 @@ filtrarNotasAprovadas mediaMinima notas =
 -- Aplica um bônus às notas sem ultrapassar o limite de 10.
 aplicarBonus :: Double -> [Double] -> [Double]
 aplicarBonus bonus notas =
-    map (min 10 . (+ bonus)) notas
+    fmap (min 10 . (+ bonus)) notas
 
 
 -- Soma todas as notas de uma lista.

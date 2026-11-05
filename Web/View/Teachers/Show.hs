@@ -14,9 +14,16 @@ instance View ShowView where
             <dt>Especialização</dt><dd>{fromMaybe "Não informada" teacher.specialization}</dd>
         </dl>
 
+        <div class="detail-actions">
+            <a class="btn btn-outline-primary" href={TeachersAction}>Voltar à listagem</a>
+            {when isAdmin (editLink teacher)}
+        </div>
     |]
         where
             breadcrumb = renderBreadcrumb
                             [ breadcrumbLink "Professores" TeachersAction
                             , breadcrumbText "Detalhes do professor"
                             ]
+
+editLink :: Teacher -> Html
+editLink teacher = [hsx|<a class="btn btn-primary" href={EditTeacherAction teacher.id}>Editar</a>|]

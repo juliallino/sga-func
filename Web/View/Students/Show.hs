@@ -13,9 +13,16 @@ instance View ShowView where
             <dt>Número de matrícula</dt><dd>{student.enrollmentNumber}</dd>
         </dl>
 
+        <div class="detail-actions">
+            <a class="btn btn-outline-primary" href={if isStudent then pathTo StudentDashboardAction else pathTo StudentsAction}>{if isStudent then "Voltar ao início" else "Voltar à listagem" :: Text}</a>
+            {when isAdmin (editLink student)}
+        </div>
     |]
         where
             breadcrumb = renderBreadcrumb
-                            [ breadcrumbLink "Estudantes" StudentsAction
+                            [ if isStudent then breadcrumbLink "Início" StudentDashboardAction else breadcrumbLink "Estudantes" StudentsAction
                             , breadcrumbText "Detalhes do estudante"
                             ]
+
+editLink :: Student -> Html
+editLink student = [hsx|<a class="btn btn-primary" href={EditStudentAction student.id}>Editar</a>|]

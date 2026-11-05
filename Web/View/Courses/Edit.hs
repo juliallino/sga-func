@@ -19,7 +19,7 @@ renderForm :: Course -> Html
 renderForm course = formFor course [hsx|
     {(textField #name) { fieldLabel = "Nome" }}
     {(textField #code) { fieldLabel = "Código" }}
-    {(numberField #workload) { fieldLabel = "Carga horária" }}
-    {submitButton { label = "Salvar" }}
+    {(numberField #workload) { fieldLabel = "Carga horária (horas)", additionalAttributes = [("min", "1")] }}
+    {formActions (submitButton { label = "Salvar" }) (pathTo CoursesAction)}
 
 |]

@@ -8,17 +8,18 @@ instance View IndexView where
         {breadcrumb}
 
         <h1>Disciplinas{when isAdmin (newSubjectLink)}</h1>
+        {when (null subjects) (emptyState "subjects" "Nenhuma disciplina cadastrada" "Cadastre uma disciplina vinculada a um curso.")}
         <div class="table-responsive">
             <table class="table">
                 <thead>
                     <tr>
-                        <th>Nome</th>
-                        <th>Código</th>
-                        <th>Carga horária</th>
-                        <th>Curso</th>
-                        <th></th>
-                        <th></th>
-                        <th></th>
+                        <th scope="col">Nome</th>
+                        <th scope="col">Código</th>
+                        <th scope="col">Carga horária</th>
+                        <th scope="col">Curso</th>
+                        <th scope="col"><span class="visually-hidden">Ações</span></th>
+                        <th scope="col"><span class="visually-hidden">Ações</span></th>
+                        <th scope="col"><span class="visually-hidden">Ações</span></th>
                     </tr>
                 </thead>
                 <tbody>{forEach subjects (renderSubject courses)}</tbody>

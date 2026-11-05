@@ -8,17 +8,18 @@ instance View IndexView where
         {breadcrumb}
 
         <h1>Professores<a href={pathTo NewTeacherAction} class="btn btn-primary ms-4">+ Novo professor</a></h1>
+        {when (null teachers) (emptyState "teachers" "Nenhum professor cadastrado" "Cadastre um professor e atribua suas disciplinas nos vínculos docentes.")}
         <div class="table-responsive">
             <table class="table">
                 <thead>
                     <tr>
-                        <th>Nome</th>
-                        <th>E-mail</th>
-                        <th>Número de registro</th>
-                        <th>Especialização</th>
-                        <th></th>
-                        <th></th>
-                        <th></th>
+                        <th scope="col">Nome</th>
+                        <th scope="col">E-mail</th>
+                        <th scope="col">Número de registro</th>
+                        <th scope="col">Especialização</th>
+                        <th scope="col"><span class="visually-hidden">Ações</span></th>
+                        <th scope="col"><span class="visually-hidden">Ações</span></th>
+                        <th scope="col"><span class="visually-hidden">Ações</span></th>
                     </tr>
                 </thead>
                 <tbody>{forEach teachers renderTeacher}</tbody>

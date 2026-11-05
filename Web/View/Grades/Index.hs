@@ -8,18 +8,19 @@ instance View IndexView where
     html IndexView { .. } = [hsx|
         {breadcrumb}
 
-        <h1>{if isStudent then "Minhas notas" else "Avaliações" :: Text}{when isAdmin (newGradeLink)}</h1>
+        <h1>{if isStudent then "Minhas notas" else "Avaliações" :: Text}{when canWriteGrades (newGradeLink)}</h1>
+        {when (null grades) (emptyState "grades" "Nenhuma avaliação encontrada" "As avaliações disponíveis para sua conta serão exibidas aqui.")}
         <div class="table-responsive">
             <table class="table">
                 <thead>
                     <tr>
-                        <th>Matrícula</th>
-                        <th>Nome da avaliação</th>
-                        <th>Nota</th>
-                        <th>Peso</th>
-                        <th></th>
-                        <th></th>
-                        <th></th>
+                        <th scope="col">Matrícula</th>
+                        <th scope="col">Nome da avaliação</th>
+                        <th scope="col">Nota</th>
+                        <th scope="col">Peso</th>
+                        <th scope="col"><span class="visually-hidden">Ações</span></th>
+                        <th scope="col"><span class="visually-hidden">Ações</span></th>
+                        <th scope="col"><span class="visually-hidden">Ações</span></th>
                     </tr>
                 </thead>
                 <tbody>{forEach grades (renderGrade enrollmentOptions)}</tbody>
@@ -40,7 +41,7 @@ renderGrade enrollmentOptions grade = [hsx|
         <td>{grade.score}</td>
         <td>{grade.weight}</td>
         <td><a href={ShowGradeAction grade.id}>Visualizar</a></td>
-        <td>{when isAdmin (editGradeLink grade)}</td>
+        <td>{when canWriteGrades (editGradeLink grade)}</td>
         <td>{when isAdmin (deleteGradeLink grade)}</td>
     </tr>
 |]

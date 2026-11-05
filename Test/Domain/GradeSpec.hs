@@ -11,6 +11,8 @@ spec = do
             mediaPonderada [] `shouldBe` Nothing
         it "considera os pesos e aceita notas decimais" $
             mediaPonderada [(7.5, 1), (9, 3)] `shouldBe` Just 8.625
+        it "calcula o exemplo acadêmico com três pesos" $
+            mediaDaMatricula [(8, 2), (6, 3), (10, 5)] `shouldBe` Just 8.4
         it "aceita os limites 0 e 10" $
             mediaPonderada [(0, 1), (10, 1)] `shouldBe` Just 5
         it "rejeita notas fora do intervalo" $
