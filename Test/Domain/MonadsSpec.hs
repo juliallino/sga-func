@@ -43,6 +43,25 @@ spec = do
             validarDadosMatricula (Just (1 :: Int)) (Just (2 :: Int)) "invalid"
                 `shouldSatisfy` isLeft
     describe "Reader: configuração explícita sem IO" $ do
+        it "preserva os validadores dos campos web com a configuração de produção" $ do
+            mapM_ (\nota -> runReader (validarNotaConfigurada nota) configAcademicaPadrao
+                `shouldBe` validarNota nota) [-1, 0, 8, 10, 11]
+            mapM_ (\peso -> runReader (validarPesoConfigurado peso) configAcademicaPadrao
+                `shouldBe` validarPeso peso) [-1, 0, 0.001, 1, 999.99]
+        it "transporta os limites aos dois campos sem alterar o ambiente padrão" $ do
+            let restrita = AcademicConfig 8 1 20
+            runReader (validarNotaConfigurada 9) restrita
+                `shouldBe` Left "A nota excede o máximo configurado."
+            runReader (validarPesoConfigurado 1) restrita
+                `shouldBe` Left "O peso deve superar o mínimo configurado."
+            runReader (validarNotaConfigurada 9) configAcademicaPadrao `shouldBe` Right 9
+            runReader (validarPesoConfigurado 1) configAcademicaPadrao `shouldBe` Right 1
+        it "rejeita configuração inválida em cada campo antes da persistência" $ do
+            let invalida = AcademicConfig 10 (-1) 20
+            runReader (validarNotaConfigurada 8) invalida
+                `shouldBe` Left "Configuração acadêmica inválida."
+            runReader (validarPesoConfigurado 2) invalida
+                `shouldBe` Left "Configuração acadêmica inválida."
         it "preserva as regras atuais na configuração padrão" $ do
             runReader (validarAvaliacao 10 0.001) configAcademicaPadrao
                 `shouldBe` Right (10, 0.001)

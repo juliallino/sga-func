@@ -32,6 +32,12 @@ DELETE /DeleteStudent?studentId DeleteStudentAction
 |]
 
 
+[routes|StudentConfidentialNotesController
+GET /StudentConfidentialNote?studentId StudentConfidentialNoteAction
+POST /SaveStudentConfidentialNote?studentId SaveStudentConfidentialNoteAction
+POST /RemoveStudentConfidentialNote?studentId RemoveStudentConfidentialNoteAction
+|]
+
 [routes|CoursesController
 GET /Courses CoursesAction
 GET /NewCourse NewCourseAction

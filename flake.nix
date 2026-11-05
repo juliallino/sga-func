@@ -34,6 +34,9 @@
                         text
                         mtl
                         crypton
+                        aeson
+                        attoparsec
+                        attoparsec-aeson
                         memory
                         bytestring
                         base64-bytestring

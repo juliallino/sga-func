@@ -14,6 +14,7 @@ import Web.Controller.Grades ()
 import Web.Controller.Enrollments ()
 import Web.Controller.Courses ()
 import Web.Controller.Students ()
+import Web.Controller.StudentConfidentialNotes ()
 import Web.Controller.Static ()
 
 instance FrontController WebApplication where
@@ -29,6 +30,7 @@ instance FrontController WebApplication where
         , parseRoute @GradesController
         , parseRoute @EnrollmentsController
         , parseRoute @CoursesController
+        , parseRoute @StudentConfidentialNotesController
         , parseRoute @StudentsController
         ]
 

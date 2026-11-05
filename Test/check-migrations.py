@@ -25,7 +25,7 @@ sql("DELETE FROM grades WHERE id='00000000-0000-0000-0000-000000000104'; DELETE 
 course_before=sql("SELECT md5(jsonb_agg(to_jsonb(t))::text) FROM courses t")
 run(['migrate'])
 assert sql("SELECT md5(jsonb_agg(to_jsonb(t))::text) FROM courses t")==course_before
-assert sql("SELECT string_agg(revision::text,',' ORDER BY revision) FROM schema_migrations")=='1793548800'
+assert sql("SELECT string_agg(revision::text,',' ORDER BY revision) FROM schema_migrations")=='1793548800,1793923200'
 metadata="SELECT table_name,column_name,data_type,udt_name,is_nullable,COALESCE(column_default,'') FROM information_schema.columns WHERE table_schema='public' AND table_name<>'schema_migrations' ORDER BY table_name,column_name"
 constraints="SELECT conrelid::regclass::text,conname,pg_get_constraintdef(oid),convalidated FROM pg_constraint WHERE connamespace='public'::regnamespace AND conrelid::regclass::text<>'schema_migrations' ORDER BY 1,2"
 indexes="SELECT tablename,indexname,indexdef FROM pg_indexes WHERE schemaname='public' AND tablename<>'schema_migrations' ORDER BY 1,2"

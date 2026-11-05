@@ -16,6 +16,7 @@ CREATE TABLE students (
     name TEXT NOT NULL,
     email TEXT NOT NULL UNIQUE,
     enrollment_number TEXT NOT NULL UNIQUE,
+    confidential_note_encrypted TEXT,
     CONSTRAINT students_ref_user_id FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE NO ACTION
 );
 

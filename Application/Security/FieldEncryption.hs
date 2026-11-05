@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PackageImports #-}
--- Isolated authenticated-encryption demonstration. No database dependencies.
+-- Authenticated field encryption primitive. No database dependencies.
 module Application.Security.FieldEncryption
     ( EncryptionKey, EncryptionError (..), keyFromBytes, loadEncryptionKey
     , encryptField, decryptField
@@ -47,7 +47,7 @@ loadEncryptionKey = do
 
 -- Envelope v1: magic (4) | random nonce (12) | auth tag (16) | ciphertext.
 -- context is authenticated, not encrypted; bind it to field + record identity
--- if this demonstration is ever integrated after a separate data review.
+-- in the persistence service; the primitive does not authorize database access.
 magic :: ByteString
 magic = "SGA1"
 

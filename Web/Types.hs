@@ -24,6 +24,12 @@ data StudentsController
     | DeleteStudentAction { studentId :: !(Id Student) }
     deriving (Eq, Show, Data)
 
+data StudentConfidentialNotesController
+    = StudentConfidentialNoteAction { studentId :: !(Id Student) }
+    | SaveStudentConfidentialNoteAction { studentId :: !(Id Student) }
+    | RemoveStudentConfidentialNoteAction { studentId :: !(Id Student) }
+    deriving (Eq, Show, Data)
+
 data CoursesController
     = CoursesAction
     | NewCourseAction

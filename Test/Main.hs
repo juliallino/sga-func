@@ -8,6 +8,7 @@ import qualified Test.Domain.MonadsSpec as MonadsSpec
 import qualified Test.Domain.FunctorsLazySpec as FunctorsLazySpec
 import qualified Test.Domain.EnrollmentCPSSpec as EnrollmentCPSSpec
 import qualified Test.SecuritySpec as SecuritySpec
+import qualified Test.Domain.ConfidentialNoteSpec as ConfidentialNoteSpec
 import qualified Test.Domain.AcademicSpec as AcademicSpec
 
 -- Import your test specs here:
@@ -21,6 +22,7 @@ main = hspec do
     FunctorsLazySpec.spec
     EnrollmentCPSSpec.spec
     SecuritySpec.spec
+    ConfidentialNoteSpec.spec
     AcademicSpec.spec
     describe "Example" do
         it "should pass" do

@@ -14,7 +14,8 @@ import Web.FrontController ()
 import Web.Controller.Students ()
 import Web.Controller.Courses ()
 import Web.Controller.Enrollments ()
-import Web.Controller.Grades ()
+import Web.Controller.Grades (buildGradeWithConfig)
+import Application.Domain.AcademicConfig (AcademicConfig (..), configAcademicaPadrao)
 import Generated.Types
 import Test.Hspec
 import IHP.AuthSupport.Authentication (hashPassword)
@@ -293,6 +294,18 @@ main = do
                     updated <- fetch enrollment.id
                     updated.enrollmentDate `shouldBe` originalDate
         describe "CRUD de notas e dependências" do
+            it "usa o Reader no builder real com configurações diferentes sem persistir" $ withUser admin do
+                enrollment <- query @Enrollment |> fetchOne
+                before <- query @Grade |> fetchCount
+                let draft = newRecord @Grade
+                        |> set #enrollmentId (unpackId enrollment.id)
+                        |> set #assessmentName "Reader sem persistência"
+                        |> set #score 9
+                        |> set #weight 1
+                isValid (buildGradeWithConfig configAcademicaPadrao draft) `shouldBe` True
+                isValid (buildGradeWithConfig (AcademicConfig 8 0 20) draft) `shouldBe` False
+                isValid (buildGradeWithConfig (AcademicConfig 10 1 20) draft) `shouldBe` False
+                query @Grade |> fetchCount >>= (`shouldBe` before)
             it "oferece a matrícula com aluno e disciplina no seletor de notas" $ withUser admin do
                 enrollment <- query @Enrollment |> fetchOne
                 response <- callAction NewGradeAction

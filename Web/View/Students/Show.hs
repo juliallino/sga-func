@@ -16,6 +16,7 @@ instance View ShowView where
         <div class="detail-actions">
             <a class="btn btn-outline-primary" href={if isStudent then pathTo StudentDashboardAction else pathTo StudentsAction}>{if isStudent then "Voltar ao início" else "Voltar à listagem" :: Text}</a>
             {when isAdmin (editLink student)}
+            {when isAdmin (confidentialNoteLink student)}
         </div>
     |]
         where
@@ -26,3 +27,6 @@ instance View ShowView where
 
 editLink :: Student -> Html
 editLink student = [hsx|<a class="btn btn-primary" href={EditStudentAction student.id}>Editar</a>|]
+
+confidentialNoteLink :: Student -> Html
+confidentialNoteLink student = [hsx|<a class="btn btn-outline-primary" href={StudentConfidentialNoteAction student.id}>Observação confidencial</a>|]

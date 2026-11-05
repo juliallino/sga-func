@@ -1,7 +1,8 @@
 module Web.Controller.Grades where
 
 import Web.Controller.Prelude
-import qualified Application.Domain.Validation as AcademicValidation
+import qualified Application.Domain.AcademicConfig as AcademicConfig
+import Control.Monad.Reader (runReader)
 import Web.View.Grades.Form (EnrollmentOption (..), buildEnrollmentOptions)
 import Web.View.Grades.Index
 import Web.View.Grades.New
@@ -96,11 +97,15 @@ instance Controller GradesController where
         setSuccessMessage "Nota excluída com sucesso."
         redirectTo GradesAction
 
-buildGrade grade = grade
+-- Keep the existing academic limits; the same Reader environment is supplied
+-- to both field validators on every create/update, before persistence.
+buildGrade grade = buildGradeWithConfig AcademicConfig.configAcademicaPadrao grade
+
+buildGradeWithConfig config grade = grade
     |> fill @'["enrollmentId", "assessmentName", "score", "weight"]
     |> validateField #assessmentName (withCustomErrorMessage "Informe o nome da avaliação." nonEmpty)
-    |> validateField #score (validacaoEither (AcademicValidation.validarNota . realToFrac))
-    |> validateField #weight (validacaoEither (AcademicValidation.validarPeso . realToFrac))
+    |> validateField #score (validacaoEither (\value -> runReader (AcademicConfig.validarNotaConfigurada (realToFrac value)) config))
+    |> validateField #weight (validacaoEither (\value -> runReader (AcademicConfig.validarPesoConfigurado (realToFrac value)) config))
     |> validateField #weight validarPrecisaoPeso
 
 validarMatricula :: (?modelContext :: ModelContext) => Grade -> IO Bool
