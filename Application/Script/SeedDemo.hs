@@ -1,6 +1,6 @@
-module Main where
+module Application.Script.SeedDemo (run) where
 
-import Application.Script.Prelude
+import Application.Script.Prelude hiding (run)
 import Config
 import IHP.AuthSupport.Authentication (hashPassword)
 import qualified Application.Domain.Grade as GradeDomain
@@ -24,8 +24,8 @@ offerings =
     , ("DEMO-PF", "Programação Funcional", "DEMO-DOC-005", "Ricardo Souza", "docente.funcional@example.test")
     ]
 
-main :: IO ()
-main = seedMain `catch` (\(_ :: SomeException) -> die "Demonstração interrompida; consultas e credenciais omitidas.")
+run :: Script
+run = seedMain `catch` (\(_ :: SomeException) -> die "Demonstração interrompida; consultas e credenciais omitidas.")
 
 seedMain :: IO ()
 seedMain = do
