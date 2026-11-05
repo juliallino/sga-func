@@ -26,7 +26,7 @@ buildEnrollmentOptions enrollments students subjects = map toOption enrollments
             Just subject -> subject.name <> " (" <> subject.code <> ")"
             Nothing -> "Disciplina indisponível"
 
-renderForm :: Grade -> [EnrollmentOption] -> Html
+renderForm :: (?request :: Request) => Grade -> [EnrollmentOption] -> Html
 renderForm grade enrollmentOptions = formFor grade [hsx|
     {(selectField #enrollmentId enrollmentOptions)
         { fieldLabel = "Matrícula", placeholder = "Selecione uma matrícula", required = True }}
@@ -37,7 +37,15 @@ renderForm grade enrollmentOptions = formFor grade [hsx|
     {formActions (submitButton { label = "Salvar" }) (pathTo GradesAction)}
 |]
 
-noEnrollments :: Html
+noEnrollments :: (?request :: Request) => Html
 noEnrollments = [hsx|
-    <p>Nenhuma matrícula cadastrada. <a href={NewEnrollmentAction}>Cadastrar matrícula</a></p>
+    {emptyState "enrollments" (if isAdmin then "Nenhuma matrícula cadastrada." else "Nenhuma matrícula disponível") "O lançamento depende de uma matrícula em disciplina autorizada."}
+    {when isAdmin newEnrollmentLink}
+    {when isTeacher teacherNotice}
 |]
+
+newEnrollmentLink :: Html
+newEnrollmentLink = [hsx|<a class="btn btn-outline-primary" href={NewEnrollmentAction}>Cadastrar matrícula</a>|]
+
+teacherNotice :: Html
+teacherNotice = [hsx|<p class="form-text">Solicite à administração a conferência das matrículas e dos vínculos docentes.</p>|]

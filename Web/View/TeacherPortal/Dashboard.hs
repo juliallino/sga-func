@@ -2,9 +2,12 @@ module Web.View.TeacherPortal.Dashboard where
 
 import Web.View.Prelude
 import Web.View.Static.Welcome (metric, quick)
-import Web.View.Dashboard.Report (AcademicReport, renderDisciplineFilters)
+import Web.View.Dashboard.Report (AcademicReport, renderDisciplineFilters, averageText)
+import Application.Helper.Portal (SubjectPerformance (..))
+import qualified Application.Domain.Academic as Academic
+import Web.View.Portal.Academic
 
-data DashboardView = DashboardView { teacher :: Teacher, subjectCount :: Int, studentCount :: Int, assessmentCount :: Int, subjects :: [Subject], courses :: [Course], academicReport :: AcademicReport, enrollments :: [Enrollment] }
+data DashboardView = DashboardView { teacher :: Teacher, subjectCount :: Int, studentCount :: Int, assessmentCount :: Int, subjects :: [Subject], courses :: [Course], academicReport :: AcademicReport, enrollments :: [Enrollment], performances :: [SubjectPerformance] }
 
 instance View DashboardView where
     html DashboardView { .. } = [hsx|
@@ -27,6 +30,12 @@ instance View DashboardView where
             <p class="page-description">Selecione uma disciplina para consultar estudantes, avaliações, médias e ranking.</p>
             {when (null subjects) (emptyState "subjects" "Nenhuma disciplina encontrada" "Revise os filtros ou solicite à administração a atribuição de disciplinas.")}
             <div class="table-responsive"><table class="table"><thead><tr><th scope="col">Disciplina</th><th scope="col">Curso</th><th scope="col">Estudantes</th><th scope="col">Médias e ranking por disciplina</th></tr></thead><tbody>{forEach subjects (renderAuthorizedSubject courses enrollments)}</tbody></table></div>
+        </section>
+        <section class="dashboard-section" aria-labelledby="teacher-performance">
+            <div class="section-heading"><h2 id="teacher-performance">Resumo do desempenho acadêmico</h2><a href={AcademicRankingsAction}>Consultar rankings das disciplinas</a></div>
+            <p class="page-description">Média atual da turma por disciplina: média simples das médias ponderadas disponíveis. Matrículas sem média ficam fora desse cálculo. Não representa fechamento oficial.</p>
+            {approvalNotice}
+            <div class="table-responsive"><table class="table"><caption class="visually-hidden">Desempenho por disciplina autorizada</caption><thead><tr><th scope="col">Disciplina</th><th scope="col">Matriculados</th><th scope="col">Média atual da turma</th><th scope="col">Com média</th><th scope="col">Sem média</th><th scope="col">Aprovados</th><th scope="col">Desempenho insuficiente</th></tr></thead><tbody>{forEach performances renderPerformance}</tbody></table></div>
         </section>
         <section aria-labelledby="teacher-shortcuts">
             <div class="section-heading"><h2 id="teacher-shortcuts">Acesso rápido</h2><span>Sua rotina acadêmica</span></div>
@@ -67,3 +76,11 @@ renderAuthorizedSubject courses enrollments subject = [hsx|
     <tr><td><a href={ShowSubjectAction subject.id}>{subject.name} · {subject.code}</a></td><td>{courseName}</td><td><a href={TeacherSubjectStudentsAction subject.id}>{length (filter (\e -> e.subjectId == unpackId subject.id) enrollments)} estudantes</a></td><td><a href={AcademicRankingsAction}>Médias e ranking</a> · <a href={TeacherSubjectAssessmentsAction subject.id}>Avaliações</a></td></tr>
 |]
     where courseName = maybe "Curso indisponível" (.name) (find (\course -> unpackId course.id == subject.courseId) courses)
+
+renderPerformance :: SubjectPerformance -> Html
+renderPerformance row = [hsx|
+    <tr><td><a href={TeacherSubjectStudentsAction row.performanceSubject.id}>{row.performanceSubject.name}</a></td><td>{row.performanceEnrollmentCount}</td><td>{averageText summary.currentClassAverage}</td><td>{summary.availableAverages}</td><td>{summary.missingAverages}</td><td>{optionalCount summary.approvedCount}</td><td>{optionalCount summary.insufficientCount}</td></tr>
+|]
+    where
+        summary :: Academic.Performance
+        summary = row.performanceSummary

@@ -2,13 +2,14 @@ module Web.View.Grades.Index where
 import Web.View.Prelude
 import Web.View.Grades.Form (EnrollmentOption (..))
 
-data IndexView = IndexView { grades :: [Grade], enrollmentOptions :: [EnrollmentOption] }
+data IndexView = IndexView { grades :: [Grade], enrollmentOptions :: [EnrollmentOption], selectedSubject :: Maybe Subject }
 
 instance View IndexView where
     html IndexView { .. } = [hsx|
         {breadcrumb}
 
-        <h1>{if isStudent then "Minhas notas" else "Avaliações" :: Text}{when canWriteGrades (newGradeLink)}</h1>
+        <h1>{if isStudent then "Minhas notas" else "Avaliações" :: Text}{when canWriteGrades (newGradeLink selectedSubject)}</h1>
+        {forEach selectedSubject subjectContext}
         {when (null grades) (emptyState "grades" "Nenhuma avaliação encontrada" "As avaliações disponíveis para sua conta serão exibidas aqui.")}
         <div class="table-responsive">
             <table class="table">
@@ -46,8 +47,12 @@ renderGrade enrollmentOptions grade = [hsx|
     </tr>
 |]
 
-newGradeLink :: (?request :: Request) => Html
-newGradeLink = [hsx|<a href={pathTo NewGradeAction} class="btn btn-primary ms-4">+ Nova nota</a>|]
+subjectContext :: Subject -> Html
+subjectContext subject = [hsx|<p class="page-description">Disciplina: <strong>{subject.name}</strong> · {subject.code}</p>|]
+
+newGradeLink :: (?request :: Request) => Maybe Subject -> Html
+newGradeLink subject = [hsx|<a href={url} class="btn btn-primary ms-4">+ Nova nota</a>|]
+    where url = pathTo NewGradeAction <> maybe "" (\s -> "?subjectId=" <> cs (show s.id)) subject
 
 editGradeLink :: (?request :: Request) => Grade -> Html
 editGradeLink grade = [hsx|<a href={EditGradeAction grade.id} class="text-muted">Editar</a>|]
