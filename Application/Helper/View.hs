@@ -55,6 +55,7 @@ iconPath "enrollments" = "M8 4H5v17h14V4h-3 M8 2h8v5H8z M8 12h8 M8 16h5"
 iconPath "grades" = "M5 3h14v18H5z M8 8h8 M8 12h4 M8 16h8"
 iconPath "users" = "M8 7a4 4 0 1 0 8 0 4 4 0 0 0-8 0 M4 21v-2a8 8 0 0 1 16 0v2"
 iconPath "logout" = "M9 4H4v16h5 M13 8l4 4-4 4 M8 12h12"
+iconPath "attendance" = "M4 4h16v16H4z M8 12l3 3 5-6"
 iconPath _ = "M12 3v18 M3 12h18"
 
 instance CanSelect Teacher where

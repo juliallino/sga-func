@@ -7,6 +7,7 @@ import Web.View.Enrollments.Index
 import Web.View.Enrollments.New
 import Web.View.Enrollments.Edit
 import Web.View.Enrollments.Show
+import Application.Helper.Portal (attendanceSummary)
 
 instance Controller EnrollmentsController where
     action EnrollmentsAction = do
@@ -33,6 +34,10 @@ instance Controller EnrollmentsController where
             |> filterWhere (#enrollmentId, unpackId enrollmentId)
             |> fetch
         let media = calcularMediaEnrollment grades
+        attendanceRecords <- query @Attendance |> filterWhere (#enrollmentId, unpackId enrollmentId) |> fetch
+        sessions <- query @ClassSession |> filterWhereIn (#id, map (Id . (.classSessionId)) attendanceRecords) |> orderByDesc #classDate |> fetch
+        let attendance = attendanceSummary attendanceRecords enrollment
+        let attendanceRows = mapMaybe (\session -> (\entry -> (session, entry.present)) <$> find (\entry -> entry.classSessionId == unpackId session.id) attendanceRecords) sessions
         render ShowView { .. }
         
     action EditEnrollmentAction { enrollmentId } = do
@@ -45,10 +50,16 @@ instance Controller EnrollmentsController where
     action UpdateEnrollmentAction { enrollmentId } = do
         requireAdmin
         enrollment <- fetchOr404 enrollmentId
+        let originalSubjectId = enrollment.subjectId
         students <- query @Student |> fetch
         subjects <- query @Subject |> fetch
+        presenca <- query @Attendance |> filterWhere (#enrollmentId, unpackId enrollmentId) |> fetchOneOrNothing
         enrollment <- validarEnrollment (buildEnrollment enrollment)
-        enrollment |> ifValid \case
+        -- Presenças pertencem às aulas da disciplina original.
+        let enrollmentChecked = if isJust presenca && enrollment.subjectId /= originalSubjectId
+                then attachFailure #subjectId "Não é possível trocar a disciplina de uma matrícula com chamadas registradas." enrollment
+                else enrollment
+        enrollmentChecked |> ifValid \case
             Left enrollment -> render EditView { .. }
             Right enrollment -> do
                 enrollment <- enrollment |> updateRecord
@@ -74,8 +85,13 @@ instance Controller EnrollmentsController where
         dependencias <- query @Grade
             |> filterWhere (#enrollmentId, unpackId enrollmentId)
             |> fetchOneOrNothing
+        presencas <- query @Attendance
+            |> filterWhere (#enrollmentId, unpackId enrollmentId)
+            |> fetchOneOrNothing
         if isJust dependencias
             then setErrorMessage "Não é possível excluir uma matrícula com notas."
+            else if isJust presencas
+            then setErrorMessage "Não é possível excluir uma matrícula com chamadas registradas."
             else do
                 deleteRecord enrollment
                 setSuccessMessage "Matrícula excluída com sucesso."

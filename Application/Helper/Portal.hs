@@ -4,6 +4,7 @@ import IHP.ControllerPrelude
 import Generated.Types
 import qualified Application.Domain.Grade as GradeDomain
 import qualified Application.Domain.Academic as Academic
+import qualified Application.Domain.Attendance as AttendanceDomain
 
 -- Inputs must already be authorized by visibleEnrollments/visibleGrades.
 -- Views receive these projections and never query data or calculate averages.
@@ -14,6 +15,7 @@ data StudentEnrollment = StudentEnrollment
     , rowTeachers :: [Teacher]
     , rowGrades :: [Grade]
     , rowAverage :: Maybe Double
+    , rowAttendance :: AttendanceDomain.ResumoFrequencia
     }
 
 averageGrades :: [Grade] -> Maybe Double
@@ -24,9 +26,10 @@ studentEnrollmentRows enrollments subjects grades = do
     courses <- query @Course |> filterWhereIn (#id, map (Id . (.courseId)) subjects) |> fetch
     permissions <- query @TeacherSubject |> filterWhereIn (#subjectId, map (unpackId . (.id)) subjects) |> fetch
     teachers <- query @Teacher |> filterWhereIn (#id, map (Id . (.teacherId)) permissions) |> fetch
-    pure (mapMaybe (project courses permissions teachers) enrollments)
+    attendances <- enrollmentAttendances enrollments
+    pure (mapMaybe (project courses permissions teachers attendances) enrollments)
     where
-        project courses permissions teachers enrollment = do
+        project courses permissions teachers attendances enrollment = do
             subject <- find (\s -> unpackId s.id == enrollment.subjectId) subjects
             let assessments = filter (\g -> g.enrollmentId == unpackId enrollment.id) grades
             let assignedIds = map (.teacherId) (filter (\p -> p.subjectId == enrollment.subjectId) permissions)
@@ -37,6 +40,7 @@ studentEnrollmentRows enrollments subjects grades = do
                 , rowTeachers = filter (\t -> unpackId t.id `elem` assignedIds) teachers
                 , rowGrades = assessments
                 , rowAverage = averageGrades assessments
+                , rowAttendance = attendanceSummary attendances enrollment
                 }
 
 -- Same complete-course rule as the existing general ranking: every subject in
@@ -56,14 +60,32 @@ data SubjectPerformance = SubjectPerformance
     { performanceSubject :: Subject
     , performanceEnrollmentCount :: Int
     , performanceSummary :: Academic.Performance
+    , performanceAttendanceBelowMinimum :: Int
     }
 
-subjectPerformance :: [Enrollment] -> [Grade] -> Subject -> SubjectPerformance
-subjectPerformance enrollments grades subject = SubjectPerformance subject (length selected)
-    (Academic.performance Academic.approvalPolicy (map result selected))
+subjectPerformance :: [Enrollment] -> [Grade] -> [Attendance] -> Subject -> SubjectPerformance
+subjectPerformance enrollments grades attendances subject = SubjectPerformance subject (length selected)
+    (Academic.performanceWithAttendance Academic.approvalPolicy (map result selected))
+    (Academic.attendanceBelowMinimumCount (map (AttendanceDomain.classificarFrequencia . attendanceSummary attendances) selected))
     where
         selected = filter (\e -> e.subjectId == unpackId subject.id) enrollments
-        result enrollment = (enrollment.status == Completed, averageGrades (filter (\g -> g.enrollmentId == unpackId enrollment.id) grades))
+        result enrollment =
+            ( enrollment.status == Completed
+            , AttendanceDomain.classificarFrequencia (attendanceSummary attendances enrollment)
+            , averageGrades (filter (\g -> g.enrollmentId == unpackId enrollment.id) grades)
+            )
 
-enrollmentStanding :: Enrollment -> Maybe Double -> Academic.AcademicStanding
-enrollmentStanding enrollment = Academic.classifyAverage Academic.approvalPolicy (enrollment.status == Completed)
+-- A situação acadêmica considera a média e a frequência mínima de 75 %.
+enrollmentStanding :: Enrollment -> AttendanceDomain.ResumoFrequencia -> Maybe Double -> Academic.AcademicStanding
+enrollmentStanding enrollment attendance = Academic.classifyEnrollment Academic.approvalPolicy
+    (enrollment.status == Completed) (AttendanceDomain.classificarFrequencia attendance)
+
+-- Inputs must already be authorized: presences are read only for these enrollments.
+enrollmentAttendances :: (?modelContext :: ModelContext) => [Enrollment] -> IO [Attendance]
+enrollmentAttendances enrollments = query @Attendance
+    |> filterWhereIn (#enrollmentId, map (unpackId . (.id)) enrollments)
+    |> fetch
+
+attendanceSummary :: [Attendance] -> Enrollment -> AttendanceDomain.ResumoFrequencia
+attendanceSummary attendances enrollment = AttendanceDomain.resumirFrequencia
+    [entry.present | entry <- attendances, entry.enrollmentId == unpackId enrollment.id]

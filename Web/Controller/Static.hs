@@ -5,6 +5,7 @@ import Web.View.Static.Welcome
 import qualified Web.View.Students.Show as Student
 import Application.Helper.Portal
 import qualified Application.Domain.Academic as Academic
+import qualified Application.Domain.Attendance as AttendanceDomain
 import qualified Web.View.TeacherPortal.Dashboard as TeacherPortal
 import qualified Web.View.StudentPortal.Dashboard as StudentPortal
 import qualified Web.View.StudentPortal.Academic as StudentAcademic
@@ -45,7 +46,8 @@ instance Controller StaticController where
         subjects <- query @Subject |> filterWhereIn (#id, map (Id . (.subjectId)) enrollments) |> fetch
         rows <- studentEnrollmentRows enrollments subjects grades
         courseAverages <- studentCourseAverages rows
-        let studentPerformance = Academic.performance Academic.approvalPolicy (map (\row -> (row.rowEnrollment.status == Completed, row.rowAverage)) rows)
+        let studentPerformance = Academic.performanceWithAttendance Academic.approvalPolicy
+                (map (\row -> (row.rowEnrollment.status == Completed, AttendanceDomain.classificarFrequencia row.rowAttendance, row.rowAverage)) rows)
         let assessmentCount = length grades
         academicReport <- loadAcademicReport
         render StudentPortal.DashboardView { .. }
@@ -57,8 +59,11 @@ instance Controller StaticController where
         enrollments <- query @Enrollment |> filterWhere (#subjectId, unpackId subjectId) |> fetch
         students <- query @Student |> filterWhereIn (#id, map (Id . (.studentId)) enrollments) |> fetch
         grades <- query @Grade |> filterWhereIn (#enrollmentId, map (unpackId . (.id)) enrollments) |> fetch
-        let results = map (\enrollment -> (enrollment, averageGrades (filter (\grade -> grade.enrollmentId == unpackId enrollment.id) grades))) enrollments
-        let performance = performanceSummary (subjectPerformance enrollments grades subject)
+        attendances <- enrollmentAttendances enrollments
+        let results = map (\enrollment -> (enrollment, attendanceSummary attendances enrollment, averageGrades (filter (\grade -> grade.enrollmentId == unpackId enrollment.id) grades))) enrollments
+        let summary = subjectPerformance enrollments grades attendances subject
+        let performance = performanceSummary summary
+        let attendanceBelowMinimum = performanceAttendanceBelowMinimum summary
         render TeacherStudents.IndexView { .. }
 
     action TeacherSubjectAssessmentsAction { subjectId } = do
@@ -83,7 +88,8 @@ instance Controller StaticController where
         let academicReport = AcademicReport dashboardFilters error
                 (map (\course -> (show course.id,course.name)) courses)
                 (map (\subject -> (show subject.id,subject.name)) authorizedSubjects) [] []
-        let performances = map (subjectPerformance enrollments grades) subjects
+        attendances <- enrollmentAttendances enrollments
+        let performances = map (subjectPerformance enrollments grades attendances) subjects
         render TeacherPortal.DashboardView { .. }
 
     action TeacherProfileAction = do

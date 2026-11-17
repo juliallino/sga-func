@@ -134,3 +134,17 @@ requireEnrollmentWrite enrollmentId = do
         permission <- unsafeSqlQuery "SELECT id FROM teacher_subjects WHERE teacher_id = ? AND subject_id = ? FOR SHARE"
             (unpackId teacher.id, subjectId) :: IO [Only UUID]
         when (null permission) forbidden
+
+-- Escrita de chamadas: mesmo protocolo de requireEnrollmentWrite. Deve ser usada
+-- dentro da transação de escrita; a disciplina e o vínculo docente ficam
+-- bloqueados até o commit, então uma revogação concorrente não é ignorada.
+requireSubjectWrite :: (?request :: Request, ?respond :: Respond, ?modelContext :: ModelContext) => Id Subject -> IO ()
+requireSubjectWrite subjectId = do
+    requireGradeWriter
+    rows <- unsafeSqlQuery "SELECT id FROM subjects WHERE id = ? FOR SHARE" (Only (unpackId subjectId)) :: IO [Only UUID]
+    when (null rows) (earlyReturn renderNotFound)
+    when ((currentUser @User).role_ == Roleteacher) do
+        teacher <- myTeacher
+        permission <- unsafeSqlQuery "SELECT id FROM teacher_subjects WHERE teacher_id = ? AND subject_id = ? FOR SHARE"
+            (unpackId teacher.id, unpackId subjectId) :: IO [Only UUID]
+        when (null permission) forbidden

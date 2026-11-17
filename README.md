@@ -118,6 +118,17 @@ Detalhes, arquivos e validações: [documentação da interface](docs/interface-
 
 ---
 
+## Frequência
+
+Admin e professores registram a chamada de cada aula em **Frequência** /
+**Chamada e frequência**. A frequência de cada matrícula é presenças ÷ aulas com
+chamada registrada, e o mínimo para aprovação é **75 %**: matrícula concluída
+abaixo disso é reprovada por frequência, qualquer que seja a média. Estudantes
+veem a própria frequência em *Minhas disciplinas*, *Minhas notas* e nos detalhes
+da matrícula. Detalhes: [documentação da frequência](docs/frequencia.md).
+
+---
+
 ## Professores e disciplinas
 
 O menu principal oferece acesso aos dois novos CRUDs, com cadastro,

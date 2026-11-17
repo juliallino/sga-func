@@ -71,6 +71,7 @@ roleMenu Roleadmin = [hsx|
     {navItem "subjects" "Disciplinas" (pathTo SubjectsAction)}
     {navItem "enrollments" "Matrículas" (pathTo EnrollmentsAction)}
     {navItem "grades" "Avaliações" (pathTo GradesAction)}
+    {navItem "attendance" "Frequência" (pathTo ClassSessionSubjectsAction)}
     {navItem "users" "Usuários" (pathTo UsersAction)}
     {navItem "grades" "Rankings" (pathTo AcademicRankingsAction)}
 |]
@@ -89,6 +90,7 @@ roleMenu Roleteacher = [hsx|
     {navItem "students" "Meus estudantes" (pathTo TeacherStudentsAction)}
     {navItem "grades" "Lançar notas" (pathTo TeacherGradeEntryAction)}
     {navItem "enrollments" "Avaliações" (pathTo TeacherAssessmentsAction)}
+    {navItem "attendance" "Chamada e frequência" (pathTo ClassSessionSubjectsAction)}
     {navItem "users" "Meu perfil" (pathTo TeacherProfileAction)}
 |]
 
@@ -111,6 +113,7 @@ navItem icon label url = [hsx|
             , (if isTeacher then pathTo TeacherAssessmentsAction else pathTo GradesAction, ["/Grades", "/ShowGrade"])
             , (pathTo MyProfileAction, if isStudent then ["/ShowStudent"] else [])
             , (pathTo TeacherStudentsAction, ["/TeacherSubjectStudents"])
+            , (pathTo ClassSessionSubjectsAction, ["/ClassSessions", "/NewClassSession", "/CreateClassSession", "/EditClassSession", "/UpdateClassSession"])
             ]
 
 -- The 'assetPath' function used below appends a `?v=SOME_VERSION` to the static assets in production

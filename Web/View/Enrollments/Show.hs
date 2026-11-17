@@ -1,6 +1,9 @@
 module Web.View.Enrollments.Show where
 
 import Web.View.Prelude
+import qualified Application.Domain.Attendance as AttendanceDomain
+import Web.View.Portal.Academic (renderAttendance)
+import Web.View.ClassSessions.Form (formatDay)
 
 data ShowView = ShowView
     { enrollment :: Enrollment
@@ -8,6 +11,8 @@ data ShowView = ShowView
     , subject :: Subject
     , grades :: [Grade]
     , media :: Maybe Double
+    , attendance :: AttendanceDomain.ResumoFrequencia
+    , attendanceRows :: [(ClassSession, Bool)]
     }
 
 instance View ShowView where
@@ -34,6 +39,9 @@ instance View ShowView where
 
             <dt>Média ponderada</dt>
             <dd>{textoMedia}</dd>
+
+            <dt>Frequência</dt>
+            <dd>{renderAttendance attendance} · mínimo de {AttendanceDomain.frequenciaMinimaPercentual} % para aprovação</dd>
         </dl>
 
         <h2>Avaliações</h2>
@@ -44,6 +52,14 @@ instance View ShowView where
                     <tr><th scope="col">Avaliação</th><th scope="col">Nota</th><th scope="col">Peso</th><th scope="col"><span class="visually-hidden">Ações</span></th><th scope="col"><span class="visually-hidden">Ações</span></th></tr>
                 </thead>
                 <tbody>{forEach grades renderAssessment}</tbody>
+            </table>
+        </div>
+        <h2>Frequência</h2>
+        {when (null attendanceRows) noAttendance}
+        <div class="table-responsive">
+            <table class="table">
+                <thead><tr><th scope="col">Data da aula</th><th scope="col">Conteúdo</th><th scope="col">Presença</th></tr></thead>
+                <tbody>{forEach attendanceRows renderAttendanceRow}</tbody>
             </table>
         </div>
         <div class="detail-actions">
@@ -72,6 +88,14 @@ renderAssessment grade = [hsx|
         <td>{when canWriteGrades (editAssessment grade)}</td>
     </tr>
 |]
+
+renderAttendanceRow :: (ClassSession, Bool) -> Html
+renderAttendanceRow (classSession, present) = [hsx|
+    <tr><td>{formatDay classSession.classDate}</td><td>{fromMaybe "—" classSession.topic}</td><td>{if present then "Presente" else "Falta" :: Text}</td></tr>
+|]
+
+noAttendance :: Html
+noAttendance = [hsx|<p>Nenhuma chamada registrada nesta matrícula.</p>|]
 
 noAssessments :: Html
 noAssessments = [hsx|<p>Nenhuma avaliação registrada nesta matrícula.</p>|]
