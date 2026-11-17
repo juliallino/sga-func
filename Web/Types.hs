@@ -88,3 +88,14 @@ data TeacherSubjectsController
     = TeacherSubjectsAction | CreateTeacherSubjectAction
     | DeleteTeacherSubjectAction { teacherSubjectId :: !(Id TeacherSubject) }
     deriving (Eq, Show, Data)
+
+-- Frequência: chamadas (aulas) de uma disciplina e presenças das matrículas.
+data ClassSessionsController
+    = ClassSessionSubjectsAction
+    | ClassSessionsAction { subjectId :: !(Id Subject) }
+    | NewClassSessionAction { subjectId :: !(Id Subject) }
+    | CreateClassSessionAction { subjectId :: !(Id Subject) }
+    | EditClassSessionAction { classSessionId :: !(Id ClassSession) }
+    | UpdateClassSessionAction { classSessionId :: !(Id ClassSession) }
+    | DeleteClassSessionAction { classSessionId :: !(Id ClassSession) }
+    deriving (Eq, Show, Data)

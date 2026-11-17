@@ -17,7 +17,7 @@ emptySubjects = emptyState "subjects" "Nenhuma disciplina atribuída" "Solicite 
 
 renderSubject :: [Course] -> [Enrollment] -> Subject -> Html
 renderSubject courses enrollments subject = [hsx|
-    <tr><td><a href={ShowSubjectAction subject.id}>{subject.name}</a></td><td>{subject.code}</td><td>{courseName}</td><td>{subject.workload} h</td><td>{length (filter (\e -> e.subjectId == unpackId subject.id) enrollments)}</td><td><a href={TeacherSubjectStudentsAction subject.id}>Meus estudantes</a><br/><a href={TeacherSubjectAssessmentsAction subject.id}>Consultar avaliações</a> · <a href={gradeEntryUrl subject.id Nothing}>Lançar notas</a></td></tr>
+    <tr><td><a href={ShowSubjectAction subject.id}>{subject.name}</a></td><td>{subject.code}</td><td>{courseName}</td><td>{subject.workload} h</td><td>{length (filter (\e -> e.subjectId == unpackId subject.id) enrollments)}</td><td><a href={TeacherSubjectStudentsAction subject.id}>Meus estudantes</a><br/><a href={TeacherSubjectAssessmentsAction subject.id}>Consultar avaliações</a> · <a href={gradeEntryUrl subject.id Nothing}>Lançar notas</a><br/><a href={ClassSessionsAction subject.id}>Chamadas e frequência</a></td></tr>
 |]
     where courseName = maybe "Curso indisponível" (.name) (find (\course -> unpackId course.id == subject.courseId) courses)
 

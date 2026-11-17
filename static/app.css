@@ -1091,3 +1091,31 @@ h1>.btn {
 /* Academic portal summaries share the established purple palette. */
 .academic-result { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin:16px 0; color:var(--sga-primary-dark); }
 .detail-actions + .metrics-grid { margin-top:24px; }
+
+/* Frequência: destaque abaixo de 75 % e lista de presença da chamada. */
+.attendance-low {
+    color:#B42318;
+    font-weight:600
+}
+
+.attendance-roster {
+    display:grid;
+    gap:6px;
+    margin:12px 0 20px;
+    padding:0;
+    list-style:none
+}
+
+.attendance-roster li {
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:8px 12px;
+    border:1px solid var(--sga-line);
+    border-radius:8px;
+    background:var(--sga-canvas)
+}
+
+.attendance-roster small {
+    color:var(--sga-muted)
+}

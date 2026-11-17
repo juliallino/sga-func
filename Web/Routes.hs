@@ -105,3 +105,13 @@ GET /TeacherSubjects TeacherSubjectsAction
 POST /CreateTeacherSubject CreateTeacherSubjectAction
 DELETE /DeleteTeacherSubject?teacherSubjectId DeleteTeacherSubjectAction
 |]
+
+[routes|ClassSessionsController
+GET /ClassSessionSubjects ClassSessionSubjectsAction
+GET /ClassSessions?subjectId ClassSessionsAction
+GET /NewClassSession?subjectId NewClassSessionAction
+POST /CreateClassSession?subjectId CreateClassSessionAction
+GET /EditClassSession?classSessionId EditClassSessionAction
+POST /UpdateClassSession?classSessionId UpdateClassSessionAction
+DELETE /DeleteClassSession?classSessionId DeleteClassSessionAction
+|]

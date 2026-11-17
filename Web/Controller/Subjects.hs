@@ -65,8 +65,11 @@ instance Controller SubjectsController where
         subject <- fetchOr404 subjectId
         permissions <- query @TeacherSubject |> filterWhere (#subjectId, unpackId subjectId) |> fetchOneOrNothing
         enrollment <- query @Enrollment |> filterWhere (#subjectId, unpackId subjectId) |> fetchOneOrNothing
+        classSession <- query @ClassSession |> filterWhere (#subjectId, unpackId subjectId) |> fetchOneOrNothing
         if isJust enrollment
             then setErrorMessage "Não é possível excluir uma disciplina com matrículas."
+            else if isJust classSession
+            then setErrorMessage "Não é possível excluir uma disciplina com chamadas registradas."
             else if isJust permissions
             then setErrorMessage "Revogue as autorizações antes de excluir disciplina."
             else do
