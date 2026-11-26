@@ -118,6 +118,20 @@ Detalhes, arquivos e validações: [documentação da interface](docs/interface-
 
 ---
 
+## Períodos, matrícula inativa e aprovação
+
+- **Períodos letivos** (menu *Períodos*, Admin): semestres como 2026.1 e 2026.2.
+  Cada matrícula pertence a um período, e o estudante pode refazer uma disciplina
+  em outro período. Em *Minhas disciplinas* o estudante filtra por período.
+- **Matrícula inativa**: matrícula com notas não pode ser excluída; o Admin a
+  **desativa**, e ela deixa de aparecer para o estudante.
+- **Aprovação**: média ponderada mínima **5,0** e frequência mínima de **75 %**,
+  avaliadas quando a matrícula está concluída.
+
+Detalhes: [períodos, situação inativa e reprovação](docs/periodos-situacao-reprovacao.md).
+
+---
+
 ## Frequência
 
 Admin e professores registram a chamada de cada aula em **Frequência** /

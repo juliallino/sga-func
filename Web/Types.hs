@@ -42,6 +42,7 @@ data EnrollmentsController
     | EditEnrollmentAction { enrollmentId :: !(Id Enrollment) }
     | UpdateEnrollmentAction { enrollmentId :: !(Id Enrollment) }
     | DeleteEnrollmentAction { enrollmentId :: !(Id Enrollment) }
+    | DeactivateEnrollmentAction { enrollmentId :: !(Id Enrollment) }
     deriving (Eq, Show, Data)
 
 data GradesController
@@ -98,4 +99,14 @@ data ClassSessionsController
     | EditClassSessionAction { classSessionId :: !(Id ClassSession) }
     | UpdateClassSessionAction { classSessionId :: !(Id ClassSession) }
     | DeleteClassSessionAction { classSessionId :: !(Id ClassSession) }
+    deriving (Eq, Show, Data)
+
+-- Períodos letivos (2026.1, 2026.2...), gerenciados pelo Admin.
+data AcademicPeriodsController
+    = AcademicPeriodsAction
+    | NewAcademicPeriodAction
+    | CreateAcademicPeriodAction
+    | EditAcademicPeriodAction { academicPeriodId :: !(Id AcademicPeriod) }
+    | UpdateAcademicPeriodAction { academicPeriodId :: !(Id AcademicPeriod) }
+    | DeleteAcademicPeriodAction { academicPeriodId :: !(Id AcademicPeriod) }
     deriving (Eq, Show, Data)

@@ -31,6 +31,12 @@ spec = do
         classifyAverage rule True Nothing `shouldBe` NoAverage
         performance rule [(True, Just 6.25), (True, Just 6), (False, Just 9), (False, Nothing)]
             `shouldBe` Performance (Just (21.25 / 3)) 3 1 (Just 1) (Just 1) (Just 3)
+    it "aplica o critério do grupo: média mínima 5,0 com a matrícula concluída" $ do
+        approvalPolicy `shouldBe` Just (ApprovalPolicy 5 True)
+        classifyAverage approvalPolicy True (Just 5) `shouldBe` Approved
+        classifyAverage approvalPolicy True (Just 4.99) `shouldBe` Insufficient
+        classifyAverage approvalPolicy False (Just 3) `shouldBe` InProgress
+        classifyAverage approvalPolicy True Nothing `shouldBe` NoAverage
     it "recusa critérios inválidos e não usa médias inválidas na classificação" $ do
         validPolicy (Just (ApprovalPolicy (0/0) False)) `shouldBe` Nothing
         validPolicy (Just (ApprovalPolicy 11 False)) `shouldBe` Nothing

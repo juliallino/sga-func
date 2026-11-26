@@ -13,15 +13,15 @@ mediaGeralCompleta quantidade medias
             then Just (sum valores / fromIntegral quantidade)
             else Nothing
 
--- No approval threshold or assessment-closing rule exists in the current model.
--- Keep the policy absent until the academic owner supplies both criteria.
+-- Critério definido pelo grupo: média ponderada mínima 5,0, avaliada somente
+-- quando a matrícula está Concluída (antes disso a situação é "Em andamento").
 data ApprovalPolicy = ApprovalPolicy
     { passingAverage :: Double
     , requireCompleted :: Bool
     } deriving (Eq, Show)
 
 approvalPolicy :: Maybe ApprovalPolicy
-approvalPolicy = Nothing
+approvalPolicy = Just (ApprovalPolicy 5 True)
 
 -- AttendanceBelowMinimum: matrícula em andamento com frequência abaixo de 75 %.
 -- FailedAttendance: matrícula concluída com frequência abaixo de 75 %.

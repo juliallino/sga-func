@@ -72,7 +72,11 @@ visibleEnrollments = do
         Roleadmin -> query @Enrollment |> fetch
         Rolestudent -> do
             student <- myStudent
-            query @Enrollment |> filterWhere (#studentId, unpackId student.id) |> fetch
+            -- Matrículas inativas (desativadas) não aparecem para o estudante.
+            query @Enrollment
+                |> filterWhere (#studentId, unpackId student.id)
+                |> filterWhereNot (#status, Inactive)
+                |> fetch
         Roleteacher -> do
             subjects <- visibleSubjects
             query @Enrollment |> filterWhereIn (#subjectId, map (unpackId . (.id)) subjects) |> fetch
@@ -82,7 +86,9 @@ requireEnrollment enrollment = do
     requireLogin
     case (currentUser @User).role_ of
         Roleadmin -> pure ()
-        Rolestudent -> requireStudent (Id enrollment.studentId)
+        Rolestudent -> do
+            requireStudent (Id enrollment.studentId)
+            when (enrollment.status == Inactive) (earlyReturn renderNotFound)
         Roleteacher -> requireSubject (Id enrollment.subjectId)
 
 visibleGrades :: (?request :: Request, ?respond :: Respond, ?modelContext :: ModelContext) => IO [Grade]

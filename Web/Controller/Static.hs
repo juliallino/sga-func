@@ -64,6 +64,7 @@ instance Controller StaticController where
         let summary = subjectPerformance enrollments grades attendances subject
         let performance = performanceSummary summary
         let attendanceBelowMinimum = performanceAttendanceBelowMinimum summary
+        periods <- query @AcademicPeriod |> filterWhereIn (#id, map Id (mapMaybe (.academicPeriodId) enrollments)) |> fetch
         render TeacherStudents.IndexView { .. }
 
     action TeacherSubjectAssessmentsAction { subjectId } = do
@@ -105,7 +106,13 @@ instance Controller StaticController where
         enrollments <- visibleEnrollments
         subjects <- query @Subject |> filterWhereIn (#id, map (Id . (.subjectId)) enrollments) |> fetch
         grades <- visibleGrades
-        rows <- studentEnrollmentRows enrollments subjects grades
+        allRows <- studentEnrollmentRows enrollments subjects grades
+        -- Só os períodos em que o próprio estudante tem matrícula, mais recentes primeiro.
+        let periods = reverse (sortOn (.startsOn) (nubBy (\a b -> a.id == b.id) (mapMaybe (.rowPeriod) allRows)))
+        let selectedPeriod = paramOrNothing @Text "periodId" >>= (\raw -> readMaybe (cs raw) :: Maybe UUID)
+        let rows = case selectedPeriod of
+                Nothing -> allRows
+                Just periodUuid -> filter (\row -> fmap (unpackId . (.id)) row.rowPeriod == Just periodUuid) allRows
         render StudentAcademic.SubjectsView { .. }
 
     action StudentAveragesAction = do
@@ -155,7 +162,7 @@ loadAcademicReport = do
     let reportCourses = map (\course -> (show course.id,course.name)) courses
     let reportSubjects = map (\subject -> (show subject.id,subject.name)) subjects
     let reportRanking = if (currentUser @User).role_ == Roleadmin
-            then D.visibleRankingGroups results (D.rankingGroups allResults)
+            then D.visibleRankingGroups results (D.rankingGroups (filter (\result -> D.resultStatus result /= "inactive") allResults))
             else []
     pure AcademicReport { .. }
 
@@ -177,7 +184,7 @@ readDashboardFilters = D.DashboardFilters
 validateDashboardFilters :: D.DashboardFilters -> Maybe Text
 validateDashboardFilters filters
     | any invalidId [D.filterCourse filters, D.filterSubject filters] = Just "Selecione um curso e uma disciplina válidos."
-    | D.filterStatus filters `notElem` ["", "active", "suspended", "completed"] = Just "Selecione uma situação de matrícula válida."
+    | D.filterStatus filters `notElem` ["", "active", "suspended", "completed", "inactive"] = Just "Selecione uma situação de matrícula válida."
     | otherwise = either Just (const Nothing) (D.parseBounds filters)
     where invalidId raw = not (Text.null raw) && isNothing (readMaybe (cs raw) :: Maybe UUID)
 
@@ -190,3 +197,4 @@ statusValue :: EnrollmentStatus -> Text
 statusValue Active = "active"
 statusValue Suspended = "suspended"
 statusValue Completed = "completed"
+statusValue Inactive = "inactive"

@@ -16,6 +16,7 @@ import Web.Controller.Courses ()
 import Web.Controller.Students ()
 import Web.Controller.Static ()
 import Web.Controller.ClassSessions ()
+import Web.Controller.AcademicPeriods ()
 
 instance FrontController WebApplication where
     controllers = 
@@ -32,6 +33,7 @@ instance FrontController WebApplication where
         , parseRoute @CoursesController
         , parseRoute @StudentsController
         , parseRoute @ClassSessionsController
+        , parseRoute @AcademicPeriodsController
         ]
 
 instance InitControllerContext WebApplication where

@@ -6,13 +6,14 @@ data EditView = EditView
     { enrollment :: Enrollment
     , students :: [Student]
     , subjects :: [Subject]
+    , periods :: [AcademicPeriod]
     }
 
 instance View EditView where
     html EditView { .. } = [hsx|
         {breadcrumb}
         <h1>Editar matrícula</h1>
-        {renderForm enrollment students subjects}
+        {renderForm enrollment students subjects periods}
     |]
         where
             breadcrumb = renderBreadcrumb

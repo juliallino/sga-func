@@ -35,7 +35,7 @@ instance View DashboardView where
             <div class="section-heading"><h2 id="teacher-performance">Resumo do desempenho acadêmico</h2><a href={AcademicRankingsAction}>Consultar rankings das disciplinas</a></div>
             <p class="page-description">Média atual da turma por disciplina: média simples das médias ponderadas disponíveis. Matrículas sem média ficam fora desse cálculo. Não representa fechamento oficial.</p>
             {approvalNotice}
-            <div class="table-responsive"><table class="table"><caption class="visually-hidden">Desempenho por disciplina autorizada</caption><thead><tr><th scope="col">Disciplina</th><th scope="col">Matriculados</th><th scope="col">Média atual da turma</th><th scope="col">Com média</th><th scope="col">Sem média</th><th scope="col">Aprovados</th><th scope="col">Desempenho insuficiente</th><th scope="col">Frequência abaixo de 75 %</th></tr></thead><tbody>{forEach performances renderPerformance}</tbody></table></div>
+            <div class="table-responsive"><table class="table"><caption class="visually-hidden">Desempenho por disciplina autorizada</caption><thead><tr><th scope="col">Disciplina</th><th scope="col">Matriculados</th><th scope="col">Média atual da turma</th><th scope="col">Com média</th><th scope="col">Sem média</th><th scope="col">Aprovados</th><th scope="col">Reprovados por nota</th><th scope="col">Frequência abaixo de 75 %</th></tr></thead><tbody>{forEach performances renderPerformance}</tbody></table></div>
         </section>
         <section aria-labelledby="teacher-shortcuts">
             <div class="section-heading"><h2 id="teacher-shortcuts">Acesso rápido</h2><span>Sua rotina acadêmica</span></div>

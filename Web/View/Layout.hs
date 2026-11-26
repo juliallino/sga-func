@@ -67,6 +67,7 @@ roleMenu Roleadmin = [hsx|
     {navItem "students" "Estudantes" (pathTo StudentsAction)}
     {navItem "teachers" "Professores" (pathTo TeachersAction)}
     {navItem "subjects" "Vínculos docentes" (pathTo TeacherSubjectsAction)}
+    {navItem "periods" "Períodos" (pathTo AcademicPeriodsAction)}
     {navItem "courses" "Cursos" (pathTo CoursesAction)}
     {navItem "subjects" "Disciplinas" (pathTo SubjectsAction)}
     {navItem "enrollments" "Matrículas" (pathTo EnrollmentsAction)}
@@ -113,6 +114,7 @@ navItem icon label url = [hsx|
             , (if isTeacher then pathTo TeacherAssessmentsAction else pathTo GradesAction, ["/Grades", "/ShowGrade"])
             , (pathTo MyProfileAction, if isStudent then ["/ShowStudent"] else [])
             , (pathTo TeacherStudentsAction, ["/TeacherSubjectStudents"])
+            , (pathTo AcademicPeriodsAction, ["/NewAcademicPeriod", "/CreateAcademicPeriod", "/EditAcademicPeriod", "/UpdateAcademicPeriod"])
             , (pathTo ClassSessionSubjectsAction, ["/ClassSessions", "/NewClassSession", "/CreateClassSession", "/EditClassSession", "/UpdateClassSession"])
             ]
 

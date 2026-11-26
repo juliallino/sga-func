@@ -89,7 +89,7 @@ main = do
             it "aluno vê matrícula, média geral completa e seus resultados sem dados de colegas" do
               withUser studentUser do
                 response <- callAction StudentDashboardAction
-                forEach [own.name,"PORTAL-S1","Média geral","8.75","Disciplinas aprovadas","Disciplinas pendentes","Critério de aprovação não configurado"] (responseBodyShouldContain response)
+                forEach [own.name,"PORTAL-S1","Média geral","8.75","Disciplinas aprovadas","Disciplinas pendentes","Critério de aprovação: média ponderada mínima 5.00"] (responseBodyShouldContain response)
                 forEach [other.name,"Avaliação externa Portal",privateCourse.name] (responseBodyShouldNotContain response)
             it "disciplinas do aluno mostram curso, códigos, docentes, situação e médias" do
               withUser studentUser do
@@ -127,7 +127,7 @@ main = do
             it "professor vê resumo por disciplina sem média global entre turmas" do
               withUser teacherUser do
                 response <- callAction TeacherDashboardAction
-                forEach [t1.name,"Resumo do desempenho acadêmico","Média atual da turma","7.25",s1.name,"Desempenho insuficiente"] (responseBodyShouldContain response)
+                forEach [t1.name,"Resumo do desempenho acadêmico","Média atual da turma","7.25",s1.name,"Reprovados por nota"] (responseBodyShouldContain response)
                 forEach [s2.name,s3.name,privateCourse.name,otherTeacherUser.email] (responseBodyShouldNotContain response)
             it "professor consulta somente seus matriculados, com e-mail e média" do
               withUser teacherUser do

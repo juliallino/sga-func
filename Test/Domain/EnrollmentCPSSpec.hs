@@ -19,14 +19,14 @@ spec = do
     describe "CPS: pipeline de matrícula em disciplina" $ do
         it "entrega os dados válidos à continuação de sucesso" $
             executar (Just 1) (Just 2) "active" dadosValidos `shouldBe` Right (1,2,"active")
-        it "aceita os três status existentes sem criar regras novas" $
-            map (\status -> executar (Just 1) (Just 2) status dadosValidos) ["active","suspended","completed"]
-                `shouldBe` map (\status -> Right (1,2,status)) ["active","suspended","completed"]
+        it "aceita os quatro status existentes, incluindo a matrícula inativa" $
+            map (\status -> executar (Just 1) (Just 2) status dadosValidos) ["active","suspended","completed","inactive"]
+                `shouldBe` map (\status -> Right (1,2,status)) ["active","suspended","completed","inactive"]
         it "valida estudante, disciplina e situação obrigatórios" $ do
             executar Nothing (Just 2) "active" dadosValidos `shouldBe` Left ["Selecione um estudante."]
             executar (Just 1) Nothing "active" dadosValidos `shouldBe` Left ["Selecione uma disciplina."]
             executar (Just 1) (Just 2) "invalida" dadosValidos
-                `shouldBe` Left ["Informe uma situação de matrícula válida: active, suspended ou completed."]
+                `shouldBe` Left ["Informe uma situação de matrícula válida: active, suspended, completed ou inactive."]
         it "preserva as mensagens de referências inexistentes e duplicidade" $ do
             executar (Just 1) (Just 2) "active" (VerificacaoMatricula False True False)
                 `shouldBe` Left ["O estudante informado não existe."]

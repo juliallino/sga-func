@@ -7,13 +7,14 @@ data NewView = NewView
     { enrollment :: Enrollment
     , students :: [Student]
     , subjects :: [Subject]
+    , periods :: [AcademicPeriod]
     }
 
 instance View NewView where
     html NewView { .. } = [hsx|
         {breadcrumb}
         <h1>Nova matrícula</h1>
-        {renderForm enrollment students subjects}
+        {renderForm enrollment students subjects periods}
     |]
         where
             breadcrumb = renderBreadcrumb

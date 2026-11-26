@@ -51,6 +51,7 @@ GET /ShowEnrollment?enrollmentId ShowEnrollmentAction
 GET /EditEnrollment?enrollmentId EditEnrollmentAction
 POST /UpdateEnrollment?enrollmentId UpdateEnrollmentAction
 DELETE /DeleteEnrollment?enrollmentId DeleteEnrollmentAction
+POST /DeactivateEnrollment?enrollmentId DeactivateEnrollmentAction
 |]
 
 
@@ -114,4 +115,13 @@ POST /CreateClassSession?subjectId CreateClassSessionAction
 GET /EditClassSession?classSessionId EditClassSessionAction
 POST /UpdateClassSession?classSessionId UpdateClassSessionAction
 DELETE /DeleteClassSession?classSessionId DeleteClassSessionAction
+|]
+
+[routes|AcademicPeriodsController
+GET /AcademicPeriods AcademicPeriodsAction
+GET /NewAcademicPeriod NewAcademicPeriodAction
+POST /CreateAcademicPeriod CreateAcademicPeriodAction
+GET /EditAcademicPeriod?academicPeriodId EditAcademicPeriodAction
+POST /UpdateAcademicPeriod?academicPeriodId UpdateAcademicPeriodAction
+DELETE /DeleteAcademicPeriod?academicPeriodId DeleteAcademicPeriodAction
 |]

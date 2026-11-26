@@ -8,6 +8,7 @@ import Web.View.Enrollments.New
 import Web.View.Enrollments.Edit
 import Web.View.Enrollments.Show
 import Application.Helper.Portal (attendanceSummary)
+import qualified Application.Domain.Period as PeriodDomain
 
 instance Controller EnrollmentsController where
     action EnrollmentsAction = do
@@ -15,13 +16,18 @@ instance Controller EnrollmentsController where
         enrollments <- visibleEnrollments
         students <- query @Student |> filterWhereIn (#id, map (Id . (.studentId)) enrollments) |> fetch
         subjects <- query @Subject |> filterWhereIn (#id, map (Id . (.subjectId)) enrollments) |> fetch
+        periods <- enrollmentPeriods enrollments
         render IndexView { .. }
 
     action NewEnrollmentAction = do
         requireAdmin
-        let enrollment = newRecord
         students <- query @Student |> fetch
         subjects <- query @Subject |> fetch
+        periods <- allPeriods
+        today <- localDay . zonedTimeToLocalTime <$> getZonedTime
+        -- Sugere o período em andamento (ou o último iniciado).
+        let suggested = PeriodDomain.periodoAtual today [(unpackId period.id, (period.startsOn, period.endsOn)) | period <- periods]
+        let enrollment = newRecord @Enrollment |> set #academicPeriodId suggested
         render NewView { .. }
 
     action ShowEnrollmentAction { enrollmentId } = do
@@ -38,6 +44,9 @@ instance Controller EnrollmentsController where
         sessions <- query @ClassSession |> filterWhereIn (#id, map (Id . (.classSessionId)) attendanceRecords) |> orderByDesc #classDate |> fetch
         let attendance = attendanceSummary attendanceRecords enrollment
         let attendanceRows = mapMaybe (\session -> (\entry -> (session, entry.present)) <$> find (\entry -> entry.classSessionId == unpackId session.id) attendanceRecords) sessions
+        period <- case enrollment.academicPeriodId of
+            Just periodId -> query @AcademicPeriod |> filterWhere (#id, Id periodId) |> fetchOneOrNothing
+            Nothing -> pure Nothing
         render ShowView { .. }
         
     action EditEnrollmentAction { enrollmentId } = do
@@ -45,6 +54,7 @@ instance Controller EnrollmentsController where
         enrollment <- fetchOr404 enrollmentId
         students <- query @Student |> fetch
         subjects <- query @Subject |> fetch
+        periods <- allPeriods
         render EditView { .. }
 
     action UpdateEnrollmentAction { enrollmentId } = do
@@ -53,8 +63,9 @@ instance Controller EnrollmentsController where
         let originalSubjectId = enrollment.subjectId
         students <- query @Student |> fetch
         subjects <- query @Subject |> fetch
+        periods <- allPeriods
         presenca <- query @Attendance |> filterWhere (#enrollmentId, unpackId enrollmentId) |> fetchOneOrNothing
-        enrollment <- validarEnrollment (buildEnrollment enrollment)
+        enrollment <- validarEnrollment (buildEnrollment enrollment) >>= validarPeriodoMatricula
         -- Presenças pertencem às aulas da disciplina original.
         let enrollmentChecked = if isJust presenca && enrollment.subjectId /= originalSubjectId
                 then attachFailure #subjectId "Não é possível trocar a disciplina de uma matrícula com chamadas registradas." enrollment
@@ -71,7 +82,8 @@ instance Controller EnrollmentsController where
         let enrollment = newRecord @Enrollment
         students <- query @Student |> fetch
         subjects <- query @Subject |> fetch
-        enrollment <- validarEnrollment (buildEnrollment enrollment)
+        periods <- allPeriods
+        enrollment <- validarEnrollment (buildEnrollment enrollment) >>= validarPeriodoMatricula
         enrollment |> ifValid \case
             Left enrollment -> render NewView { .. }
             Right enrollment -> do
@@ -89,18 +101,27 @@ instance Controller EnrollmentsController where
             |> filterWhere (#enrollmentId, unpackId enrollmentId)
             |> fetchOneOrNothing
         if isJust dependencias
-            then setErrorMessage "Não é possível excluir uma matrícula com notas."
+            then setErrorMessage "Não é possível excluir uma matrícula com notas. Use \"Desativar\": a matrícula fica Inativa e deixa de aparecer para o estudante."
             else if isJust presencas
-            then setErrorMessage "Não é possível excluir uma matrícula com chamadas registradas."
+            then setErrorMessage "Não é possível excluir uma matrícula com chamadas registradas. Use \"Desativar\": a matrícula fica Inativa e deixa de aparecer para o estudante."
             else do
                 deleteRecord enrollment
                 setSuccessMessage "Matrícula excluída com sucesso."
         redirectTo EnrollmentsAction
 
+    -- Desativar preserva notas e chamadas; a matrícula some para o estudante.
+    -- É reversível: o Admin pode editar a situação de volta.
+    action DeactivateEnrollmentAction { enrollmentId } = do
+        requireAdmin
+        enrollment <- fetchOr404 enrollmentId
+        _ <- enrollment |> set #status Inactive |> updateRecord
+        setSuccessMessage "Matrícula desativada. Ela continua visível para Admin e professores, mas não para o estudante."
+        redirectTo EnrollmentsAction
+
 buildEnrollment enrollment = enrollment
     -- Leave the date untouched: PostgreSQL uses CURRENT_DATE on creation,
     -- and updates preserve the stored creation date, ignoring request parameters.
-    |> fill @'["studentId", "subjectId", "status"]
+    |> fill @'["studentId", "subjectId", "status", "academicPeriodId"]
 
 -- Only query references after UUID and enum parsing has succeeded.
 validarEnrollment :: (?modelContext :: ModelContext) => Enrollment -> IO Enrollment
@@ -136,6 +157,25 @@ matriculaDuplicada enrollment = do
     matriculas <- query @Enrollment
         |> filterWhere (#studentId, enrollment.studentId)
         |> filterWhere (#subjectId, enrollment.subjectId)
+        -- A mesma disciplina pode ser refeita em outro período.
+        |> filterWhere (#academicPeriodId, enrollment.academicPeriodId)
         |> fetch
 
     pure (any (\matricula -> matricula.id /= enrollment.id) matriculas)
+
+-- O período é opcional; quando informado, precisa existir.
+validarPeriodoMatricula :: (?modelContext :: ModelContext) => Enrollment -> IO Enrollment
+validarPeriodoMatricula enrollment = case enrollment.academicPeriodId of
+    Nothing -> pure enrollment
+    Just periodId -> do
+        period <- query @AcademicPeriod |> filterWhere (#id, Id periodId) |> fetchOneOrNothing
+        pure (if isJust period then enrollment else attachFailure #academicPeriodId "Selecione um período válido." enrollment)
+
+allPeriods :: (?modelContext :: ModelContext) => IO [AcademicPeriod]
+allPeriods = query @AcademicPeriod |> orderByDesc #startsOn |> fetch
+
+-- Somente os períodos das matrículas já autorizadas.
+enrollmentPeriods :: (?modelContext :: ModelContext) => [Enrollment] -> IO [AcademicPeriod]
+enrollmentPeriods enrollments = query @AcademicPeriod
+    |> filterWhereIn (#id, map Id (mapMaybe (.academicPeriodId) enrollments))
+    |> fetch
