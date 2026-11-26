@@ -13,6 +13,7 @@ data ShowView = ShowView
     , media :: Maybe Double
     , attendance :: AttendanceDomain.ResumoFrequencia
     , attendanceRows :: [(ClassSession, Bool)]
+    , period :: Maybe AcademicPeriod
     }
 
 instance View ShowView where
@@ -27,6 +28,9 @@ instance View ShowView where
 
             <dt>Disciplina</dt>
             <dd>{subject.name} · {subject.code}</dd>
+
+            <dt>Período letivo</dt>
+            <dd>{maybe "Sem período" (.name) period}</dd>
 
             <dt>Data da matrícula</dt>
             <dd>{enrollment.enrollmentDate}</dd>

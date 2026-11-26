@@ -22,7 +22,7 @@ instance View DashboardView where
                 {metric "subjects" "Disciplinas matriculadas" (length rows) (pathTo StudentSubjectsAction)}
                 {metric "grades" "Minhas avaliações" assessmentCount (pathTo GradesAction)}
                 {forEach courseAverages renderCourseAverage}
-                {renderMetric (MetricValue "Disciplinas aprovadas" (optionalCount studentPerformance.approvedCount) "Conforme critério acadêmico configurado")}
+                {renderMetric (MetricValue "Disciplinas aprovadas" (optionalCount studentPerformance.approvedCount) "Média mínima 5.0 e frequência mínima de 75 %")}
                 {renderMetric (MetricValue "Disciplinas pendentes" (optionalCount studentPerformance.pendingCount) "Ainda não classificadas como aprovadas")}
                 {renderMetric (MetricValue "Sem média disponível" (show studentPerformance.missingAverages) "Ausência não equivale a nota zero")}
             </div>

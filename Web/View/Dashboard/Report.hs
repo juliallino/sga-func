@@ -36,7 +36,7 @@ renderFilters report actionUrl = [hsx|
         <div><label class="form-label" for="filter-name">Nome do estudante</label><input id="filter-name" class="form-control" type="search" name="studentName" value={D.filterName report.filters}/></div>
         <div><label class="form-label" for="filter-course">Curso</label><select id="filter-course" class="form-select" name="courseId"><option value="">Todos os cursos disponíveis</option>{forEach report.reportCourses (renderOption (D.filterCourse report.filters))}</select></div>
         <div><label class="form-label" for="filter-subject">Disciplina</label><select id="filter-subject" class="form-select" name="subjectId"><option value="">Todas as disciplinas disponíveis</option>{forEach report.reportSubjects (renderOption (D.filterSubject report.filters))}</select></div>
-        <div><label class="form-label" for="filter-status">Situação da matrícula</label><select id="filter-status" class="form-select" name="status"><option value="">Todas as situações</option>{forEach [("active", "Ativa"), ("suspended", "Suspensa"), ("completed", "Concluída")] (renderOption (D.filterStatus report.filters))}</select></div>
+        <div><label class="form-label" for="filter-status">Situação da matrícula</label><select id="filter-status" class="form-select" name="status"><option value="">Todas as situações</option>{forEach [("active", "Ativa"), ("suspended", "Suspensa"), ("completed", "Concluída"), ("inactive", "Inativa")] (renderOption (D.filterStatus report.filters))}</select></div>
         <div><label class="form-label" for="filter-minimum">Média mínima</label><input id="filter-minimum" class="form-control" type="number" min="0" max="10" step="any" name="minimum" value={D.filterMinimum report.filters}/></div>
         <div><label class="form-label" for="filter-maximum">Média máxima</label><input id="filter-maximum" class="form-control" type="number" min="0" max="10" step="any" name="maximum" value={D.filterMaximum report.filters}/></div>
         <div class="form-actions"><button class="btn btn-primary" type="submit">Aplicar filtros</button><a class="btn btn-outline-secondary" href={actionUrl}>Limpar filtros</a></div>
@@ -62,6 +62,7 @@ statusText :: Text -> Text
 statusText "active" = "Ativa"
 statusText "suspended" = "Suspensa"
 statusText "completed" = "Concluída"
+statusText "inactive" = "Inativa"
 statusText _ = "Situação indisponível"
 
 renderRanking :: AcademicReport -> Html

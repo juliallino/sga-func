@@ -40,22 +40,38 @@ CREATE TABLE subjects (
 CREATE INDEX subjects_course_id_index ON subjects (course_id);
 
 -- 5. Tipo para situação da matrícula
+-- 'inactive' (Inativa): matrícula desativada, por exemplo com notas e que não
+-- pode ser excluída. Fica oculta para o estudante; Admin e professores veem.
 CREATE TYPE enrollment_status AS ENUM (
     'active',
     'suspended',
-    'completed'
+    'completed',
+    'inactive'
+);
+
+-- 5b. Períodos letivos semestrais (ex.: 2026.1, 2026.2)
+CREATE TABLE academic_periods (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY NOT NULL,
+    name TEXT NOT NULL UNIQUE,
+    starts_on DATE NOT NULL,
+    ends_on DATE NOT NULL,
+    CONSTRAINT academic_periods_dates_order CHECK (ends_on > starts_on)
 );
 
 -- 6. Tabela de matrículas
+-- academic_period_id é opcional: matrículas anteriores aos períodos ficam sem período.
 CREATE TABLE enrollments (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY NOT NULL,
     student_id UUID NOT NULL,
     subject_id UUID NOT NULL,
     enrollment_date DATE NOT NULL DEFAULT CURRENT_DATE,
     status enrollment_status NOT NULL DEFAULT 'active',
+    academic_period_id UUID,
 
-    CONSTRAINT enrollments_unique_student_subject
-        UNIQUE (student_id, subject_id),
+    CONSTRAINT enrollments_ref_academic_period_id
+        FOREIGN KEY (academic_period_id)
+        REFERENCES academic_periods (id)
+        ON DELETE NO ACTION,
 
     CONSTRAINT enrollments_ref_student_id
         FOREIGN KEY (student_id)
@@ -74,6 +90,14 @@ CREATE INDEX enrollments_student_id_index
 
 CREATE INDEX enrollments_subject_id_index
     ON enrollments (subject_id);
+
+CREATE INDEX enrollments_academic_period_id_index
+    ON enrollments (academic_period_id);
+
+-- Um estudante cursa a disciplina uma vez por período; pode refazê-la em outro.
+-- NULLS NOT DISTINCT: sem período também conta como o mesmo "período".
+CREATE UNIQUE INDEX enrollments_unique_student_subject_period
+    ON enrollments (student_id, subject_id, academic_period_id) NULLS NOT DISTINCT;
 
 -- 8. Tabela de notas
 CREATE TABLE grades (

@@ -10,6 +10,7 @@ import qualified Test.Domain.EnrollmentCPSSpec as EnrollmentCPSSpec
 import qualified Test.SecuritySpec as SecuritySpec
 import qualified Test.Domain.AcademicSpec as AcademicSpec
 import qualified Test.Domain.AttendanceSpec as AttendanceSpec
+import qualified Test.Domain.PeriodSpec as PeriodSpec
 
 -- Import your test specs here:
 -- import Test.MySpec
@@ -24,6 +25,7 @@ main = hspec do
     SecuritySpec.spec
     AcademicSpec.spec
     AttendanceSpec.spec
+    PeriodSpec.spec
     describe "Example" do
         it "should pass" do
             1 + 1 `shouldBe` (2 :: Int)

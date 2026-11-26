@@ -16,6 +16,7 @@ data StudentEnrollment = StudentEnrollment
     , rowGrades :: [Grade]
     , rowAverage :: Maybe Double
     , rowAttendance :: AttendanceDomain.ResumoFrequencia
+    , rowPeriod :: Maybe AcademicPeriod
     }
 
 averageGrades :: [Grade] -> Maybe Double
@@ -27,9 +28,10 @@ studentEnrollmentRows enrollments subjects grades = do
     permissions <- query @TeacherSubject |> filterWhereIn (#subjectId, map (unpackId . (.id)) subjects) |> fetch
     teachers <- query @Teacher |> filterWhereIn (#id, map (Id . (.teacherId)) permissions) |> fetch
     attendances <- enrollmentAttendances enrollments
-    pure (mapMaybe (project courses permissions teachers attendances) enrollments)
+    periods <- query @AcademicPeriod |> filterWhereIn (#id, map Id (mapMaybe (.academicPeriodId) enrollments)) |> fetch
+    pure (mapMaybe (project courses permissions teachers attendances periods) enrollments)
     where
-        project courses permissions teachers attendances enrollment = do
+        project courses permissions teachers attendances periods enrollment = do
             subject <- find (\s -> unpackId s.id == enrollment.subjectId) subjects
             let assessments = filter (\g -> g.enrollmentId == unpackId enrollment.id) grades
             let assignedIds = map (.teacherId) (filter (\p -> p.subjectId == enrollment.subjectId) permissions)
@@ -41,6 +43,7 @@ studentEnrollmentRows enrollments subjects grades = do
                 , rowGrades = assessments
                 , rowAverage = averageGrades assessments
                 , rowAttendance = attendanceSummary attendances enrollment
+                , rowPeriod = find (\p -> Just (unpackId p.id) == enrollment.academicPeriodId) periods
                 }
 
 -- Same complete-course rule as the existing general ranking: every subject in
@@ -53,7 +56,9 @@ studentCourseAverages rows = do
     where
         summarize subjects course =
             let curriculum = filter (\s -> s.courseId == unpackId course.id) subjects
-                averages = map (\s -> find (\r -> r.rowSubject.id == s.id) rows >>= (.rowAverage)) curriculum
+                -- Disciplina refeita: vale a matrícula do período mais recente.
+                latestFirst = reverse (sortOn (fmap (.startsOn) . (.rowPeriod)) rows)
+                averages = map (\s -> find (\r -> r.rowSubject.id == s.id) latestFirst >>= (.rowAverage)) curriculum
             in (course, Academic.mediaGeralCompleta (length curriculum) averages)
 
 data SubjectPerformance = SubjectPerformance
@@ -68,7 +73,8 @@ subjectPerformance enrollments grades attendances subject = SubjectPerformance s
     (Academic.performanceWithAttendance Academic.approvalPolicy (map result selected))
     (Academic.attendanceBelowMinimumCount (map (AttendanceDomain.classificarFrequencia . attendanceSummary attendances) selected))
     where
-        selected = filter (\e -> e.subjectId == unpackId subject.id) enrollments
+        -- Matrículas inativas não fazem mais parte da turma.
+        selected = filter (\e -> e.subjectId == unpackId subject.id && e.status /= Inactive) enrollments
         result enrollment =
             ( enrollment.status == Completed
             , AttendanceDomain.classificarFrequencia (attendanceSummary attendances enrollment)

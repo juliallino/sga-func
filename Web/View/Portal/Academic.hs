@@ -22,7 +22,7 @@ standingText Academic.NoAverage = "Média indisponível"
 standingText Academic.PolicyPending = "Critério de aprovação não configurado"
 standingText Academic.InProgress = "Em andamento"
 standingText Academic.Approved = "Aprovado"
-standingText Academic.Insufficient = "Desempenho insuficiente"
+standingText Academic.Insufficient = "Reprovado por nota"
 standingText Academic.AttendanceBelowMinimum = "Frequência abaixo de 75 %"
 standingText Academic.FailedAttendance = "Reprovado por frequência"
 
@@ -32,7 +32,7 @@ renderStanding value = [hsx|<span class="status-badge">{standingText value}</spa
 approvalNotice :: Html
 approvalNotice = case Academic.validPolicy Academic.approvalPolicy of
     Nothing -> [hsx|<p class="portal-notice" role="status">Critério de aprovação não configurado. As médias atuais não determinam aprovação ou reprovação; os indicadores de classificação ficam indisponíveis.</p>|]
-    Just _ -> mempty
+    Just rule -> [hsx|<p class="portal-notice" role="status">Critério de aprovação: média ponderada mínima {averageText (Just (Academic.passingAverage rule))}, avaliada quando a matrícula está concluída. Abaixo disso a matrícula concluída é reprovada por nota.</p>|]
 
 -- Ex.: "80.0 % (8 de 10 aulas)", com destaque quando abaixo do mínimo.
 renderAttendance :: AttendanceDomain.ResumoFrequencia -> Html

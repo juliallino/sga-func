@@ -50,6 +50,6 @@ validarDadosMatricula :: Maybe aluno -> Maybe disciplina -> Text -> Either Text 
 validarDadosMatricula aluno disciplina situacao = do
     alunoValido <- maybe (Left "Selecione um estudante.") Right aluno
     disciplinaValido <- maybe (Left "Selecione uma disciplina.") Right disciplina
-    if situacao `elem` ["active", "suspended", "completed"]
+    if situacao `elem` ["active", "suspended", "completed", "inactive"]
         then Right (alunoValido, disciplinaValido, situacao)
-        else Left "Informe uma situação de matrícula válida: active, suspended ou completed."
+        else Left "Informe uma situação de matrícula válida: active, suspended, completed ou inactive."

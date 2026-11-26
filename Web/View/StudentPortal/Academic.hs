@@ -6,20 +6,40 @@ import Web.View.Dashboard.Report (averageText)
 import Web.View.Portal.Academic (renderStanding, approvalNotice, renderAttendance, attendanceNotice)
 import qualified Data.Text as Text
 
-data SubjectsView = SubjectsView { rows :: [StudentEnrollment] }
+data SubjectsView = SubjectsView
+    { rows :: [StudentEnrollment]
+    , periods :: [AcademicPeriod]
+    , selectedPeriod :: Maybe UUID
+    }
 instance View SubjectsView where
     html SubjectsView { .. } = [hsx|
         <p class="eyebrow">Portal do Aluno</p><h1>Minhas disciplinas</h1>
         <p class="page-description">Disciplinas em que estou matriculado, seus docentes e resultados atuais.</p>
+        {when (not (null periods)) (periodFilter periods selectedPeriod)}
         {when (null rows) emptyEnrollments}
-        <div class="table-responsive"><table class="table"><caption class="visually-hidden">Minhas disciplinas e médias atuais</caption><thead><tr><th scope="col">Disciplina</th><th scope="col">Código</th><th scope="col">Carga horária</th><th scope="col">Curso</th><th scope="col">Professor responsável</th><th scope="col">Situação da matrícula</th><th scope="col">Média atual</th><th scope="col">Frequência</th><th scope="col">Situação acadêmica</th><th scope="col">Acesso</th></tr></thead><tbody>{forEach rows renderEnrollment}</tbody></table></div>
+        <div class="table-responsive"><table class="table"><caption class="visually-hidden">Minhas disciplinas e médias atuais</caption><thead><tr><th scope="col">Disciplina</th><th scope="col">Período</th><th scope="col">Código</th><th scope="col">Carga horária</th><th scope="col">Curso</th><th scope="col">Professor responsável</th><th scope="col">Situação da matrícula</th><th scope="col">Média atual</th><th scope="col">Frequência</th><th scope="col">Situação acadêmica</th><th scope="col">Acesso</th></tr></thead><tbody>{forEach rows renderEnrollment}</tbody></table></div>
         {approvalNotice}
         {attendanceNotice}
     |]
 
+-- Filtro por GET: ?periodId=<uuid>; vazio mostra todos os períodos.
+periodFilter :: [AcademicPeriod] -> Maybe UUID -> Html
+periodFilter periods selectedPeriod = [hsx|
+    <form method="GET" action={StudentSubjectsAction} class="mb-3 d-flex gap-2 align-items-end">
+        <div><label class="form-label" for="period-filter">Período letivo</label>
+        <select id="period-filter" class="form-select" name="periodId">
+            <option value="" selected={isNothing selectedPeriod}>Todos os períodos</option>
+            {forEach periods renderOption}
+        </select></div>
+        <button type="submit" class="btn btn-outline-primary">Filtrar</button>
+    </form>
+|]
+    where
+        renderOption period = [hsx|<option value={show (unpackId period.id)} selected={selectedPeriod == Just (unpackId period.id)}>{period.name}</option>|]
+
 renderEnrollment :: StudentEnrollment -> Html
 renderEnrollment row = [hsx|
-    <tr><td>{row.rowSubject.name}</td><td>{row.rowSubject.code}</td><td>{row.rowSubject.workload} h</td><td>{maybe "Curso indisponível" (.name) row.rowCourse}</td><td>{teacherNames}</td><td>{enrollmentStatusLabel row.rowEnrollment.status}</td><td>{averageText row.rowAverage}</td><td>{renderAttendance row.rowAttendance}</td><td>{renderStanding (enrollmentStanding row.rowEnrollment row.rowAttendance row.rowAverage)}</td><td><a href={ShowEnrollmentAction row.rowEnrollment.id}>Consultar matrícula</a></td></tr>
+    <tr><td>{row.rowSubject.name}</td><td>{maybe "Sem período" (.name) row.rowPeriod}</td><td>{row.rowSubject.code}</td><td>{row.rowSubject.workload} h</td><td>{maybe "Curso indisponível" (.name) row.rowCourse}</td><td>{teacherNames}</td><td>{enrollmentStatusLabel row.rowEnrollment.status}</td><td>{averageText row.rowAverage}</td><td>{renderAttendance row.rowAttendance}</td><td>{renderStanding (enrollmentStanding row.rowEnrollment row.rowAttendance row.rowAverage)}</td><td><a href={ShowEnrollmentAction row.rowEnrollment.id}>Consultar matrícula</a></td></tr>
 |]
     where teacherNames = if null row.rowTeachers then "Professor não atribuído" else Text.intercalate ", " (map (.name) row.rowTeachers)
 
